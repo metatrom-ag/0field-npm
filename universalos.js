@@ -1484,6 +1484,22 @@ var CommonJsModule = class CommonJsModule {
 			""
 		].join("\n");
 	}
+	/**
+	* Whether a source runs as CommonJS: it compiles as the body of the function a CommonJS module runs in, as Node
+	* decides for a file no `package.json` gives a type — `import` and `export` statements, `import.meta` and a
+	* top-level `await` compile only in an ES module, whatever text a string holds.
+	*/
+	static runs(source) {
+		try {
+			CommonJsModule.#compiled(source);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+	static #compiled(source) {
+		return new Function("exports", "require", "module", "__filename", "__dirname", source);
+	}
 	#run(source, file, host) {
 		const require = (specifier) => {
 			const target = host.required(specifier, this.url);
@@ -1497,7 +1513,7 @@ var CommonJsModule = class CommonJsModule {
 			const target = host.required(specifier, this.url);
 			return "builtin" in target ? specifier : host.fileOf(target.url)?.path ?? target.url;
 		};
-		new Function("exports", "require", "module", "__filename", "__dirname", `${source}\n//# sourceURL=${this.url}`)(this.module.exports, require, this.module, file.path, file.parent?.path ?? "");
+		CommonJsModule.#compiled(`${source}\n//# sourceURL=${this.url}`)(this.module.exports, require, this.module, file.path, file.parent?.path ?? "");
 		this.module.loaded = true;
 	}
 };
@@ -1748,8 +1764,8 @@ var NodeNpmHook = class NodeNpmHook extends TypedSmartObject {
 	* A stored file's source and its format — never guessed by the runtime's own loader, which takes a `.js` file for
 	* ESM or CommonJS inconsistently across habitats. `.mjs` is always `module`, `.cjs` always `commonjs`, `.json`
 	* always `json`; a `.js` file follows the nearest `package.json` above it within its package — a package bundled
-	* inside another governs its own files, as Node reads it — or, where that names no `type`, whether it reads as
-	* `import`/`export` syntax, as Node's own newer detection does for a file no `package.json` governs.
+	* inside another governs its own files, as Node reads it — or, where that names no `type`, whether it compiles as
+	* CommonJS, as Node's own newer detection does for a file no `package.json` governs.
 	*
 	* A stored CommonJS module is handed on as the ES module a {@link CommonJsModule} stands in with, the same in every
 	* habitat, its `require`s resolved here as Node's are: by the `require` condition, a relative one by Node's file
@@ -1816,7 +1832,7 @@ var NodeNpmHook = class NodeNpmHook extends TypedSmartObject {
 		}
 	}
 	static looksLikeModule(source) {
-		return /(^|\n)\s*(import\s*[*{]|import\s+['"]|import\s+[A-Za-z_$][\w$]*\s*(,|from)|export\s*[*{]|export\s+(default|const|let|var|function|class)\b)/.test(source);
+		return !CommonJsModule.runs(source);
 	}
 	#paths = process.getBuiltinModule("node:path");
 	#modules = process.getBuiltinModule("node:module");
@@ -2127,7 +2143,11 @@ function descriptorOf(iri) {
 	const entry = entryOf(iri);
 	if (entry.endsWith(".descriptor.jsonld")) return entry;
 	if (/\.jsonld?$/.test(entry)) return `${iri.model.name}.descriptor.jsonld`;
-	return `${entry.replace(/\.[jt]sx?$/, "")}.descriptor.jsonld`;
+	return descriptorBeside(entry) ?? `${entry}.descriptor.jsonld`;
+}
+/** The descriptor beside a module's file, by its path or name; none where it names no module. */
+function descriptorBeside(path) {
+	return /\.[jt]sx?$/.test(path) ? `${path.replace(/\.[jt]sx?$/, "")}.descriptor.jsonld` : void 0;
 }
 //#endregion
 //#region dependencies/metatrom-ag/BaseKernel/main/habitats/node/file-system/ReadOnlyNodeStorage.ts
@@ -3090,19 +3110,25 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 	* Fills, through {@link NodeInstaller.extendedKernel}, every release the model at the address names by an oasis IRI
 	* and no store or working tree holds — its `@context`, its `@type` and each `{"@id"}` it references — and every
 	* release those use, as the `uses` and `realizes` of the descriptors the stores hold say, all the way down; a plain
-	* string is data and fills nothing, and its own `@id`, an npm package and a data ref are left to restoring. Nothing
-	* where each is held, or where no model is there; refused, naming the file, where a descriptor it reads is no JSON
-	* object.
+	* string is data and fills nothing, and its own `@id`, an npm package, a branch and a data ref — what no installer
+	* installs, a release being what it installs — are left to restoring. Where the address is a module's `file:` URL,
+	* it fills, the same way, what the descriptor beside that module uses and realizes, a relative path read within the
+	* folder of the nearest `corpus.jsonld` above it, or its own folder where none is. Nothing
+	* where each is held, or where no model or descriptor is there; refused, naming the file, where a descriptor it reads
+	* is no JSON object.
 	*/
 	async fill(address) {
-		const storage = this.storage();
-		const location = storage.location(address);
-		if (!await storage.has(location)) return;
+		const module = address.startsWith("file:") && descriptorBeside(address) !== void 0 ? ReadOnlyNodeFolder.fromUrl(address) : void 0;
 		let node;
-		try {
-			node = JSON.parse(await storage.get(location));
-		} catch {
-			return;
+		if (module === void 0) {
+			const storage = this.storage();
+			const location = storage.location(address);
+			if (!await storage.has(location)) return;
+			try {
+				node = JSON.parse(await storage.get(location));
+			} catch {
+				return;
+			}
 		}
 		const oasis = new NodeOasisHook({});
 		const find = (iri) => {
@@ -3116,7 +3142,8 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 		const named = [];
 		const take = (value) => {
 			const iri = typeof value === "string" ? OasisIri.of(value) : void 0;
-			if (iri !== void 0 && iri.model.namespace !== "npm" && !OasisIri.isDataRef(iri.model.ref)) named.push(iri);
+			const ref = iri?.model.ref;
+			if (iri !== void 0 && iri.model.namespace !== "npm" && (ref === void 0 || ref === "latest" || OasisIri.isPinned(ref))) named.push(iri);
 		};
 		const reference = (value, depth) => {
 			if (depth > JsonLd.depth) return;
@@ -3154,12 +3181,17 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 			} else follow(tree.file(descriptorOf(iri)), tree);
 		};
 		named.forEach(reach);
+		const beside = module?.parent?.file(descriptorBeside(module.name));
+		if (module?.parent !== void 0 && beside !== void 0) {
+			const folder = module.parent;
+			follow(beside, [folder, ...folder.ancestors].find((entry) => isFolder(entry) && entry.file("corpus.jsonld").exists) ?? folder);
+		}
 		if (lacking.size === 0) return;
-		NodeInstaller.extendedKernel.install([...lacking], () => named.flatMap((iri) => {
+		NodeInstaller.extendedKernel.install([...lacking], () => [...beside?.exists ? [beside.path] : [], ...named.flatMap((iri) => {
 			const tree = find(iri.toString());
 			const descriptor = tree ? tree.file(descriptorOf(iri)) : void 0;
 			return descriptor?.exists ? [descriptor.path] : [];
-		}));
+		})]);
 	}
 };
 function within(tree, descriptor, related) {
@@ -3881,7 +3913,9 @@ var UniversalOS = class UniversalOS extends TypedSmartObject {
 	* Where `attach` names a place, the habitat shows the SmartObject there before it starts, as its kernel attaches;
 	* only then, where `view` names a file, read as the address is, a SmartObject that is no {@link View} is shown in that file's
 	* default export, created without arguments, refused, naming the file, where it exports no View; a View shows as
-	* itself.
+	* itself. Before it imports the file, it fills the stores with what the descriptor beside that file uses, and before
+	* it restores a model, with what the model names, as {@link BaseKernel.fill} fills them — through GitHub where a
+	* store lacks one.
 	*/
 	async run(address, { words = [], attach, view } = {}) {
 		const kernel = await loaded.promise;
@@ -3892,6 +3926,7 @@ var UniversalOS = class UniversalOS extends TypedSmartObject {
 			...attach === void 0 ? {} : { attach },
 			...view === void 0 ? {} : { view: kernel.hooks.locate(view, kernel.anchor()) }
 		});
+		await kernel.fill(program.model.address);
 		await this.#begin(program, () => {});
 		return program;
 	}
@@ -3905,7 +3940,11 @@ var UniversalOS = class UniversalOS extends TypedSmartObject {
 	}
 	static async #viewOf(started, address) {
 		const exported = (await import(__rewriteRelativeImportExtension(address))).default;
-		if (typeof exported !== "function" || !(exported.prototype instanceof TypedView)) throw new Error(`the view it names exports no View by default: ${address}`);
+		const isView = typeof exported === "function" && exported.prototype instanceof TypedView;
+		const asked = isView ? exported.viewOf : void 0;
+		if (typeof asked === "function") return asked.call(exported, started);
+		if (started instanceof TypedView) return started;
+		if (!isView) throw new Error(`the view it names exports no View by default: ${address}`);
 		const view = new exported();
 		view.show(started);
 		return view;
@@ -3948,7 +3987,7 @@ var UniversalOS = class UniversalOS extends TypedSmartObject {
 		}
 		const { attach, view } = program.model;
 		if (attach !== void 0) {
-			const shown = view === void 0 || started instanceof TypedView ? started : await UniversalOS.#viewOf(started, view);
+			const shown = view === void 0 ? started : await UniversalOS.#viewOf(started, view);
 			(await loaded.promise).attach(shown, attach);
 		}
 		if (this.#programs.size === 0) this.#listen();
