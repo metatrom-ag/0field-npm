@@ -2,5 +2,5 @@
   "@context": "oasis://metatrom-ag/Cli/corpus.jsonld",
   "@type": "Cli",
   "bin": "o",
-  "root": { "@id": "oasis://metatrom-ag/Oasis@v0.17.0" }
+  "root": { "@id": "oasis://metatrom-ag/Oasis@v0.18.0" }
 }
