@@ -1,10 +1,12 @@
-# Purpose: each release of 0field that reaches this repository is on npm as
-# the package 0field, and on GitHub as a release.
+# Purpose: each release of 0field that reaches this repository is staged on
+# npm as the package 0field for a maintainer to approve, and is on GitHub as
+# a release.
 #
 # Intention: runs on a tag `v*` that metatrom-ag/0field's Dist workflow pushes
 # to metatrom-ag/0field-npm with the dist it built — the package `npm pack`
-# makes, named 0field at the tag's version — and publishes this checkout through
-# npm's trusted publishing, configured on npmjs.com for this file. It runs
+# makes, named 0field at the tag's version — and stages this checkout through
+# npm's trusted publishing, configured on npmjs.com for this file to stage
+# only; a maintainer approves it with `npm stage approve` and 2FA. It runs
 # on a runner GitHub hosts, as trusted publishing supports no self-hosted
 # one (https://docs.npmjs.com/trusted-publishers); npm adds provenance, as
 # this repository is public. Before that, it makes the tag a GitHub release
@@ -49,7 +51,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
       - name: Publish
         run: |
-          # Trusted publishing takes npm 11.5.1 or newer.
-          npm install --global npm@^11.5.1
-          # Verbose, so the log says how npm's trusted publishing exchanged the run's identity, or why it did not.
-          npm publish --access public --loglevel verbose
+          # Staged publishing takes npm 11.19 or newer, as trusted publishing allows this repository only to stage.
+          npm install --global npm@^11.19.0
+          # Staged, so each release waits for a maintainer's approval with 2FA (npm stage approve); verbose, so the log says how npm exchanged the run's identity, or why it did not.
+          npm stage publish --access public --loglevel verbose
