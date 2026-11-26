@@ -1,9 +1,9 @@
-# Purpose: each release of oasis that reaches this repository is on npm as
-# @0field/oasis, and on GitHub as a release.
+# Purpose: each release of 0field that reaches this repository is on npm as
+# the package 0field, and on GitHub as a release.
 #
-# Intention: runs on a tag `v*` that metatrom-ag/Oasis's Dist workflow pushes
-# with the dist it built — the package `npm pack` makes, named
-# @0field/oasis at the tag's version — and publishes this checkout through
+# Intention: runs on a tag `v*` that metatrom-ag/0field's Dist workflow pushes
+# to metatrom-ag/0field-npm with the dist it built — the package `npm pack`
+# makes, named 0field at the tag's version — and publishes this checkout through
 # npm's trusted publishing, configured on npmjs.com for this file. It runs
 # on a runner GitHub hosts, as trusted publishing supports no self-hosted
 # one (https://docs.npmjs.com/trusted-publishers); npm adds provenance, as
@@ -36,7 +36,7 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - name: Name this repository
-        # npm checks provenance against package.json's repository, and the dist names none, as Oasis stays private.
+        # npm checks provenance against package.json's repository: this names the repository publishing, whatever the dist names.
         run: npm pkg set repository.type=git "repository.url=git+https://github.com/$GITHUB_REPOSITORY.git"
       - name: Release on GitHub
         if: github.ref_type == 'tag'
@@ -44,7 +44,7 @@ jobs:
           # A rerun after npm refused finds the release already standing, and goes on to npm.
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then exit 0; fi
           tarball=$(npm pack --silent | tail -n 1)
-          gh release create "$GITHUB_REF_NAME" "$tarball" --title "oasis $GITHUB_REF_NAME" --notes "npm i -g @0field/oasis@${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" "$tarball" --title "0field $GITHUB_REF_NAME" --notes "npm i -g 0field@${GITHUB_REF_NAME#v}"
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Publish
