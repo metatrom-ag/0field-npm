@@ -1,0 +1,12 @@
+# Scene
+metatrom-ag/Manu#493: this repository, renamed today from metatrom-ag/0field, receives the dist of the program 0field (metatrom-ag/0field, released v0.19.0) — package.json named 0field, its repository 0field-npm — and its Publish still named @0field/oasis in its header, its release's title and its install line.
+# Decided
+- Philipp, through the dispatching session: the workflow's words name the package 0field and the repository 0field-npm; what it does stays, but for the names.
+- Claude: the step "Name this repository" stays — its comment said the dist names no repository, and dist.yml on 0field's main now names metatrom-ag/0field-npm, so the comment says it names the repository publishing whatever the dist names. npm publish reads the name from package.json; only the release's title and notes hardcode it.
+# Discussed
+- Read 0field's dist.yml (origin/main): it replaces everything but .git and .github with the dist, so README.md, LICENSE, package.json, bin/ and 0field.js are the dist's and already say 0field; the `oasis:` in 0field.js is the retired IRI scheme, not the package.
+- What runs on a pull request here: nothing — publish.yml runs on a tag v* and by hand; no ruleset, no branch protection on main (gh api, 404). The verdict is a YAML parse (ruby, exit 0); actionlint is not installed here.
+- The commit's body first said Manu#493, amended before any note to metatrom-ag/Manu#493, so it links from this repository.
+# Later
+- The trusted publisher on npmjs.com for the package 0field has to name metatrom-ag/0field-npm and publish.yml; the rename moves the repository, the package's settings are Philipp's to check.
+- The first run of the new names is the next tag Dist pushes.
