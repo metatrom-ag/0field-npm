@@ -1,0 +1,11 @@
+# Scene
+2026-11-27, Philipp and Claude, claiming the npm package 0field (metatrom-ag/0field#83, under Manu#493).
+
+# Decided
+- Philipp: the npm package 0field is claimed under his account; its trusted publisher is metatrom-ag/0field-npm's publish.yml with the permission `npm stage publish`, so each release waits for his approval with 2FA.
+- Philipp: 0.19.0, staged by his first publish and never approved, stays burned; the first real version is v0.19.1, made by the next program release.
+
+# Discussed
+- npm 11.19's help: a stage-only trusted publisher allows `npm stage publish` alone; the workflow ran `npm publish` with npm ^11.5.1.
+- The trusted publisher validates on its first publish, before 2026-11-28 17:34 UTC.
+- A workflow change: no check runs on a pull request here; the next tag's Publish run is the verdict.
