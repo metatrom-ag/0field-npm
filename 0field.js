@@ -1,5 +1,5 @@
-// @ts-self-types="./universalos.d.ts"
-//#region dependencies/metatrom-ag/BaseKernel/main/SmartObject.ts
+// @ts-self-types="./0field.d.ts"
+//#region dependencies/metatrom-ag/Manu/main/SmartObject.ts
 const habitat = globalThis;
 const Substrate = habitat.HTMLElement ?? class {};
 /**
@@ -216,14 +216,14 @@ const TypedSmartObject = class SmartObject extends Substrate {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/loading/Program.ts
+//#region dependencies/metatrom-ag/Manu/main/common/loading/Program.ts
 /**
 * Purpose: be one program a realm runs, so whoever started it can await
 * its start, find it from its SmartObject, and stop it.
 *
 * Intention: the kernels make one for each program their realm was started
-* with, and `UniversalOS` one more for each it runs beside them;
-* `UniversalOS` hands it out and names it for its SmartObject.
+* with, and `OField` one more for each it runs beside them;
+* `OField` hands it out and names it for its SmartObject.
 */
 var Program = class extends TypedSmartObject {
 	#running;
@@ -266,13 +266,13 @@ var Program = class extends TypedSmartObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/file-system/Folder.ts
+//#region dependencies/metatrom-ag/Manu/main/common/file-system/Folder.ts
 /** Whether an {@link Entry} is a {@link Folder} — by the member only a `Folder` declares. */
 function isFolder(entry) {
 	return "entries" in entry;
 }
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/file-system/git/GitConfig.ts
+//#region dependencies/metatrom-ag/Manu/main/common/file-system/git/GitConfig.ts
 /**
 * Purpose: make a Git config file's sections and values available as a model.
 *
@@ -370,11 +370,11 @@ const ESCAPES = /* @__PURE__ */ new Map([
 	["b", "\b"]
 ]);
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/file-system/git/GitModules.ts
+//#region dependencies/metatrom-ag/Manu/main/common/file-system/git/GitModules.ts
 /**
 * Purpose: keep what a tree's `.gitmodules` says it takes from other trees.
 *
-* Intention: git's own file, read as {@link GitConfig}; a `Corpus`
+* Intention: git's own file, read as {@link GitConfig}; a `Workbench`
 * asks it which dependency sits at which path.
 */
 var GitModules = class extends TypedSmartObject {
@@ -407,7 +407,7 @@ const submodules = (section, key) => {
 	return KEYS.has(key.toLowerCase()) ? void 0 : `no key a submodule has: ${key}`;
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/file-system/git/GitRepository.ts
+//#region dependencies/metatrom-ag/Manu/main/common/file-system/git/GitRepository.ts
 /**
 * Purpose: read what git keeps for one working tree.
 *
@@ -488,13 +488,13 @@ var GitRepository = class extends TypedSmartObject.Class {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/oasis/Releases.ts
+//#region dependencies/metatrom-ag/Manu/main/common/0field/Releases.ts
 /**
 * Purpose: decide which of a thing's versions or tags a ref names: its
 * latest release, or the highest release within a range.
 *
-* Intention: the oasis hook asks it over the names a corpus's `Tags` hold, the npm
-* hook over a package's version folders, and `OasisIri` reads the ranges a
+* Intention: the oField hook asks it over the names a workbench's `Tags` hold, the npm
+* hook over a package's version folders, and `OFieldIri` reads the ranges a
 * ref may name from it. It reads a version by SemVer 2.0, a range as npm
 * does.
 */
@@ -559,7 +559,7 @@ var Releases = class Releases extends TypedSmartObject {
 };
 const STABLE = /^v?(0|[1-9]\d{0,14})\.(0|[1-9]\d{0,14})\.(0|[1-9]\d{0,14})$/;
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/oasis/OasisIri.ts
+//#region dependencies/metatrom-ag/Manu/main/common/0field/OFieldIri.ts
 /**
 * Purpose: identify a SmartObject, or a version of it, the same way wherever
 * it is stored.
@@ -567,27 +567,35 @@ const STABLE = /^v?(0|[1-9]\d{0,14})\.(0|[1-9]\d{0,14})\.(0|[1-9]\d{0,14})$/;
 * Intention: realizes the IRI of a JSON-LD node's `@id` and `@type`; each
 * graph resolves it to its own address, such as a path, a hash or a CID.
 */
-var OasisIri = class OasisIri extends TypedSmartObject {
-	/** Parses an oasis IRI, or takes its parts; refuses either when it is not one, naming the fault. */
+var OFieldIri = class OFieldIri extends TypedSmartObject {
+	/** Parses an oField IRI, or takes its parts; refuses either when it is not one, naming the fault. */
 	constructor(uri) {
 		super(typeof uri === "string" ? parts(uri) : uri);
 		this.#refuseUnlessCanonical(uri);
 	}
-	/** The oasis IRI an IRI is; none where it is no oasis IRI, or none in canonical form. */
+	/**
+	* The oField IRI an IRI is; none where it is no oField IRI, or none in canonical form. An IRI of the scheme `oasis:`,
+	* the one before `ofield:`, is refused, naming `ofield://`.
+	*/
 	static of(iri) {
+		OFieldIri.refuseRetired(iri);
 		if (!iri.startsWith(SCHEME)) return void 0;
 		try {
-			return new OasisIri(iri);
+			return new OFieldIri(iri);
 		} catch {
 			return;
 		}
 	}
-	/** An IRI as it names no ref: an oasis IRI without its ref, anything else — no oasis IRI — as it stands. */
+	/** Refuses an address of the scheme `oasis:`, the one before `ofield:`, naming `ofield://`; any other passes. */
+	static refuseRetired(address) {
+		if (address.startsWith(RETIRED)) throw new TypeError(`the scheme is ofield://, not oasis://: ${address}`);
+	}
+	/** An IRI as it names no ref: an oField IRI without its ref, anything else — no oField IRI — as it stands. */
 	static unpinned(iri) {
-		const uri = OasisIri.of(iri);
+		const uri = OFieldIri.of(iri);
 		if (uri === void 0) return iri;
 		const { ref: _ref, ...rest } = uri.model;
-		return new OasisIri(rest).toString();
+		return new OFieldIri(rest).toString();
 	}
 	/**
 	* Whether a ref is a data ref — under `refs/` and no branch — which holds what is stored as data, never code to run;
@@ -602,28 +610,28 @@ var OasisIri = class OasisIri extends TypedSmartObject {
 		return /^[0-9a-f]{40}$/.test(ref) || Releases.range.test(ref) || new Releases([ref]).latest === ref;
 	}
 	/**
-	* The oasis IRI a reference naming no scheme names, read against this one as RFC 3986 resolves it — `//`, `/`, `.`
+	* The oField IRI a reference naming no scheme names, read against this one as RFC 3986 resolves it — `//`, `/`, `.`
 	* and `..` as they read there — with every part kept as written, a range and what a URL would percent-encode among
-	* them. A fragment is cut before it is resolved, as no oasis IRI has one; no oasis IRI has a query either, so a `?`
-	* is part of the path. Refused, naming the fault, where it names no oasis IRI in canonical form.
+	* them. A fragment is cut before it is resolved, as no oField IRI has one; no oField IRI has a query either, so a `?`
+	* is part of the path. Refused, naming the fault, where it names no oField IRI in canonical form.
 	*/
 	resolve(reference) {
 		const unfragmented = reference.split("#")[0];
 		if (unfragmented === "") return this;
 		if (unfragmented.startsWith("//")) {
 			const root = unfragmented.indexOf("/", 2);
-			return new OasisIri(root === -1 ? `oasis:${unfragmented}` : `oasis:${unfragmented.slice(0, root)}${join(withoutDotSegments(unfragmented.slice(root).split("/").slice(1).map(plain$1)))}`);
+			return new OFieldIri(root === -1 ? `ofield:${unfragmented}` : `ofield:${unfragmented.slice(0, root)}${join(withoutDotSegments(unfragmented.slice(root).split("/").slice(1).map(plain$1)))}`);
 		}
 		const printed = this.toString();
 		const root = printed.indexOf("/", SCHEME.length);
-		if (unfragmented.startsWith("/")) return new OasisIri(`${printed.slice(0, root)}${join(withoutDotSegments(unfragmented.split("/").slice(1).map(plain$1)))}`);
+		if (unfragmented.startsWith("/")) return new OFieldIri(`${printed.slice(0, root)}${join(withoutDotSegments(unfragmented.split("/").slice(1).map(plain$1)))}`);
 		const kept = withoutDotSegments([...[{
 			text: "",
 			head: true
 		}, ...this.model.subpath?.split("/").map(plain$1) ?? []].slice(0, -1), ...unfragmented.split("/").map(plain$1)]);
-		if (kept[0]?.head !== true) return new OasisIri(`${printed.slice(0, root)}${join(kept)}`);
+		if (kept[0]?.head !== true) return new OFieldIri(`${printed.slice(0, root)}${join(kept)}`);
 		const rest = kept.slice(1).map(({ text }) => text);
-		return new OasisIri({
+		return new OFieldIri({
 			...this.model,
 			subpath: rest.join("/")
 		});
@@ -636,7 +644,7 @@ var OasisIri = class OasisIri extends TypedSmartObject {
 		return `${SCHEME}${from}${namespace}/${name}@${ref.replaceAll("%", "%25")}${inside}`;
 	}
 	#refuseUnlessCanonical(uri) {
-		if (typeof this.model !== "object" || this.model === null) throw new TypeError("an oasis URI model is an object");
+		if (typeof this.model !== "object" || this.model === null) throw new TypeError("an oField URI model is an object");
 		const printed = this.toString();
 		if (typeof uri === "string") {
 			if (printed !== uri) throw new TypeError(`not in canonical form, which is ${printed}: ${uri}`);
@@ -652,14 +660,16 @@ var OasisIri = class OasisIri extends TypedSmartObject {
 		return source === void 0 ? "" : `${source.replaceAll("%", "%25").replaceAll("/", "%2F")}:`;
 	}
 };
-const SCHEME = "oasis://";
+const SCHEME = "ofield://";
+const RETIRED = "oasis:";
 const RANGE = /[\^~*\s]/;
 function parts(uri) {
 	const refuse = (fault) => {
 		throw new TypeError(`${fault}: ${uri}`);
 	};
-	if (!uri.startsWith(SCHEME)) refuse("not an oasis URI");
-	const rest = uri.slice(8);
+	OFieldIri.refuseRetired(uri);
+	if (!uri.startsWith(SCHEME)) refuse("not an oField URI");
+	const rest = uri.slice(9);
 	const slash = rest.indexOf("/");
 	if (slash === -1) refuse("no name");
 	const authority = rest.slice(0, slash);
@@ -722,41 +732,56 @@ function decoded(part, refuse) {
 	}
 }
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/oasis/Corpus.ts
+//#region dependencies/metatrom-ag/Manu/main/common/0field/Workbench.ts
 /**
 * Purpose: say what stands under one SmartObject's name — its domain, in its
 * own words — in one stored node that is also the dictionary its nodes name.
 *
-* Intention: a corpus, Latin for body: all that stands under one name. Its
+* Intention: a workbench is all that stands under one name. Its
 * model is what is stored — its `@id`, its own `@context`, the dictionary of
 * its words, and the descriptors of its `classes`; the working tree it is
 * read from on this host is no part of it, so a stored one has none. It is
 * the {@link GitRepository} that reads that tree, and uses the
-* {@link GitModules} of its submodules; the oasis hook asks it for its own
+* {@link GitModules} of its submodules; the oField hook asks it for its own
 * working tree and a SmartObject's checkout, and a storage that realizes
 * one for a persistence names it by an `@id`, so a model relates to it as
 * to any SmartObject. `JsonLd` reads and writes it as
-* the one node that carries its own `@context`.
+* the one node that carries its own `@context`. It is made, checked,
+* upgraded, watched and carried by the {@link WorkbenchTools} a program
+* registers, Core when it loads.
 */
-var Corpus = class Corpus extends GitRepository {
-	/** The IRI of the type of a corpus node. */
-	static type = "oasis://metatrom-ag/BaseKernel/Corpus";
-	/** A corpus of the model a node stored it as, or one read from the working tree at a folder. */
+var Workbench = class Workbench extends GitRepository {
+	/** The IRI of the type of a workbench node. */
+	static type = "ofield://metatrom-ag/Manu/Workbench";
+	static #tools;
+	/** Registers the tools {@link Workbench.create} and each workbench's `check`, `upgrade`, `watch`, `carry` and `readToken` delegate to; called by Core when it loads. */
+	static useTools(tools) {
+		Workbench.#tools = tools;
+	}
+	/** A new workbench named `name`, from a template where one is named, made by the registered tools; the lines they report. */
+	static async create(name, template) {
+		return Workbench.#registered().create(name, template);
+	}
+	static #registered() {
+		if (Workbench.#tools === void 0) throw new Error("no tools work on a workbench: load ofield://metatrom-ag/Core, which registers them");
+		return Workbench.#tools;
+	}
+	/** A workbench of the model a node stored it as, or one read from the working tree at a folder. */
 	constructor(model = {}, folder) {
 		super(folder, model);
 	}
-	/** The corpus at a folder, named by `id` where a persistence restores it. */
+	/** The workbench at a folder, named by `id` where a persistence restores it. */
 	static at(folder, id) {
-		return new Corpus(id === void 0 ? {} : { "@id": id }, folder);
+		return new Workbench(id === void 0 ? {} : { "@id": id }, folder);
 	}
-	/** The address of the file a corpus named by an `@id` is stored in: `corpus.jsonld` in the root that `@id` names. */
+	/** The address of the file a workbench named by an `@id` is stored in: `workbench.jsonld` in the root that `@id` names. */
 	static stored(id) {
-		const named = OasisIri.of(id);
-		if (named !== void 0) return new OasisIri({
+		const named = OFieldIri.of(id);
+		if (named !== void 0) return new OFieldIri({
 			...named.model,
-			subpath: "corpus.jsonld"
+			subpath: "workbench.jsonld"
 		}).toString();
-		return `${id.replace(/\/+$/, "")}/corpus.jsonld`;
+		return `${id.replace(/\/+$/, "")}/workbench.jsonld`;
 	}
 	/**
 	* The repository of the nearest `.gitmodules` or `.git` at or above a folder, so a dependency answers from its own,
@@ -765,11 +790,11 @@ var Corpus = class Corpus extends GitRepository {
 	static above(folder) {
 		if (folder === void 0) return void 0;
 		const found = [folder, ...folder.ancestors].find((entry) => isFolder(entry) && (entry.file(".gitmodules").exists || entry.folder(".git").exists || entry.file(".git").exists));
-		return found === void 0 ? void 0 : Corpus.at(found);
+		return found === void 0 ? void 0 : Workbench.at(found);
 	}
 	/**
 	* Its own working tree, at whatever its HEAD names — a branch or a detached sha — where a SmartObject is the one
-	* the `@id` of its root's `corpus.jsonld` names; none for another.
+	* the `@id` of its root's `workbench.jsonld` names; none for another.
 	*/
 	own(id) {
 		return id === this.#named ? this.folder : void 0;
@@ -791,7 +816,7 @@ var Corpus = class Corpus extends GitRepository {
 		return this.#branches(id).includes(branch) ? this.folder.folder(`dependencies/${id}/${branch}`) : void 0;
 	}
 	/**
-	* Its version: the one its model names, otherwise the one its root's `corpus.jsonld` names, as Descriptor's Generator
+	* Its version: the one its model names, otherwise the one its root's `workbench.jsonld` names, as Descriptor's Generator
 	* writes it; none where neither names one as text, and refused, as its working tree is, where its model names none
 	* and it has no tree on this host.
 	*/
@@ -801,28 +826,48 @@ var Corpus = class Corpus extends GitRepository {
 		return typeof version === "string" ? version : void 0;
 	}
 	/**
-	* The module hooks its model names, otherwise those its root's `corpus.jsonld` names; none where neither does.
+	* The module hooks its model names, otherwise those its root's `workbench.jsonld` names; none where neither does.
 	* Refused, naming the file, where they are no list of addresses.
 	*/
 	get hooks() {
 		const hooks = this.model.hooks ?? this.#node?.hooks;
 		if (hooks === void 0) return [];
-		if (!Array.isArray(hooks) || !hooks.every((hook) => typeof hook === "string")) throw new Error(`hooks is a list of module addresses: ${this.folder.file("corpus.jsonld").path}`);
+		if (!Array.isArray(hooks) || !hooks.every((hook) => typeof hook === "string")) throw new Error(`hooks is a list of module addresses: ${this.folder.file("workbench.jsonld").path}`);
 		return hooks;
 	}
 	get #node() {
-		const file = this.folder.file("corpus.jsonld");
+		const file = this.folder.file("workbench.jsonld");
 		return file.exists ? file.readJsonObject() : void 0;
 	}
 	get #named() {
 		const id = this.#node?.["@id"];
-		const named = typeof id === "string" ? OasisIri.of(id)?.model : void 0;
+		const named = typeof id === "string" ? OFieldIri.of(id)?.model : void 0;
 		return named === void 0 ? void 0 : `${named.namespace}/${named.name}`;
 	}
 	#branches(id) {
 		const prefix = `dependencies/${id}/`;
 		const paths = [...new GitModules(this.folder.file(".gitmodules")).paths, ...this.#worktrees()].map((path) => path.replace(/^(\.\/)+/, "").replace(/\/+$/, ""));
 		return [...new Set(paths.filter((path) => path.startsWith(prefix)).map((path) => path.slice(prefix.length)))];
+	}
+	/** The lines the registered tools report checking it. */
+	async check() {
+		return Workbench.#registered().check(this);
+	}
+	/** The lines the registered tools report upgrading it to what `uri` names. */
+	upgrade(uri) {
+		return Workbench.#registered().upgrade(this, uri);
+	}
+	/** Watches it, through the registered tools. */
+	watch() {
+		Workbench.#registered().watch(this);
+	}
+	/** Carries the newest `0field.js`, or the one `ref` names, into it through the registered tools; what they carried. */
+	async carry(ref) {
+		return Workbench.#registered().carry(this, ref);
+	}
+	/** What the registered tools answer for the read token `token`, passed on to them. */
+	async readToken(token) {
+		return Workbench.#registered().readToken(token);
 	}
 	/** The SmartObject this repository develops, `<namespace>/<Name>` as its `origin` remote names it; none without one. */
 	get id() {
@@ -841,7 +886,7 @@ var Corpus = class Corpus extends GitRepository {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/graphs/GraphNode.ts
+//#region dependencies/metatrom-ag/Manu/main/common/graphs/GraphNode.ts
 /**
 * Purpose: give every graph its operations once.
 *
@@ -868,7 +913,7 @@ var GraphNode = class extends TypedSmartObject.Class {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/graphs/RootedTreeNode.ts
+//#region dependencies/metatrom-ag/Manu/main/common/graphs/RootedTreeNode.ts
 /**
 * Purpose: give every rooted tree its operations once.
 *
@@ -908,7 +953,7 @@ var RootedTreeNode = class extends GraphNode {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/file-system/Entry.ts
+//#region dependencies/metatrom-ag/Manu/main/common/file-system/Entry.ts
 /**
 * Purpose: name what a store holds, whatever holds the store.
 *
@@ -943,7 +988,7 @@ var Entry = class extends RootedTreeNode {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/node/file-system/ReadOnlyNodeFile.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/node/file-system/ReadOnlyNodeFile.ts
 /**
 * Purpose: read a file on disk.
 *
@@ -991,7 +1036,7 @@ var ReadOnlyNodeFile = class extends Entry {
 /** `node:fs`, not imported, so this file still loads where node:fs does not exist. */
 const fs = () => process.getBuiltinModule("node:fs");
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/node/file-system/ReadOnlyNodeFolder.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/node/file-system/ReadOnlyNodeFolder.ts
 /**
 * Purpose: read a folder on disk.
 *
@@ -1048,13 +1093,13 @@ var ReadOnlyNodeFolder = class ReadOnlyNodeFolder extends Entry {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/loading/ModuleHookChain.ts
+//#region dependencies/metatrom-ag/Manu/main/common/loading/ModuleHookChain.ts
 /**
 * Purpose: let loading in any habitat be extended by hooks.
 *
 * Intention: uses {@link ModuleHook}s; each kernel — Node's, Bun's, the
 * browser's — carries one chain and hands each import to it, and
-* `UniversalOS` hands it to a program as `hooks`.
+* `OField` hands it to a program as `hooks`.
 */
 var ModuleHookChain = class extends TypedSmartObject {
 	#hooks = [];
@@ -1066,21 +1111,26 @@ var ModuleHookChain = class extends TypedSmartObject {
 		this.#hooks.push(hook);
 		this.update({ hooks: [...this.model.hooks, hook.name] });
 	}
-	/** The first URL a hook resolves the specifier to, the hooks asked in the order they were put in use; `undefined` where none does. */
+	/**
+	* The first URL a hook resolves the specifier to, the hooks asked in the order they were put in use; `undefined` where
+	* none does. A specifier of the scheme `oasis:`, the one before `ofield:`, is refused before any hook is asked, naming
+	* `ofield://`.
+	*/
 	resolve(specifier, parentURL) {
+		OFieldIri.refuseRetired(specifier);
 		for (const hook of this.#hooks) {
 			const url = hook.resolve?.(specifier, parentURL);
 			if (url !== void 0) return url;
 		}
 	}
 	/**
-	* Where an address lies, read from an anchor: a URL or an oasis IRI as the hooks resolve it, where one does; a
+	* Where an address lies, read from an anchor: a URL or an oField IRI as the hooks resolve it, where one does; a
 	* Windows path from its drive letter, `C:\x.ts` or `C:/x.ts`, as the file it names; any other path read from the
-	* anchor. Refused, naming the address, where it names a data ref ({@link OasisIri.isDataRef}): a data ref holds data,
+	* anchor. Refused, naming the address, where it names a data ref ({@link OFieldIri.isDataRef}): a data ref holds data,
 	* and code runs from a branch, a tag or a release.
 	*/
 	locate(address, anchor) {
-		if (OasisIri.isDataRef(OasisIri.of(address)?.model.ref)) throw new Error(`nothing runs from a data ref: ${address}`);
+		if (OFieldIri.isDataRef(OFieldIri.of(address)?.model.ref)) throw new Error(`nothing runs from a data ref: ${address}`);
 		const located = /^[A-Za-z]:[\\/]/.test(address) ? new URL(`file:///${address.replaceAll("%", "%25").replaceAll("#", "%23").replaceAll("\\", "/")}`).href : /^[A-Za-z][A-Za-z\d+.-]+:/.test(address) ? address : new URL(address, anchor).href;
 		return this.resolve(located, anchor) ?? located;
 	}
@@ -1090,7 +1140,7 @@ var ModuleHookChain = class extends TypedSmartObject {
 	* runs, and refused, naming it, where no hook resolves it.
 	*/
 	moduleOf(type, parentURL) {
-		if (OasisIri.isDataRef(OasisIri.of(type)?.model.ref)) throw new Error(`no class is loaded from a data ref: ${type}`);
+		if (OFieldIri.isDataRef(OFieldIri.of(type)?.model.ref)) throw new Error(`no class is loaded from a data ref: ${type}`);
 		const url = this.resolve(`${type}.ts`, parentURL);
 		if (url === void 0) throw new Error(`no module resolves ${type}.ts`);
 		return url;
@@ -1112,39 +1162,39 @@ var ModuleHookChain = class extends TypedSmartObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/browser/BrowserOasisHook.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/browser/BrowserOFieldHook.ts
 /**
-* Purpose: load a SmartObject by its oasis IRI in a tab.
+* Purpose: load a SmartObject by its oField IRI in a tab.
 *
-* Intention: realizes {@link ModuleHook} for the `oasis` scheme, which no
+* Intention: realizes {@link ModuleHook} for the `ofield` scheme, which no
 * browser imports, by naming the URL a web server serves the file at: the
 * IRI's own path below the base its model names. A browser extension, or
 * anything else that reaches a tab's {@link ModuleHookChain}, answers in
 * its place by coming first.
 */
-var BrowserOasisHook = class extends TypedSmartObject {
-	name = "oasis";
-	schemes = ["oasis"];
+var BrowserOFieldHook = class extends TypedSmartObject {
+	name = "ofield";
+	schemes = ["ofield"];
 	/**
-	* The URL of the file an oasis IRI names, exact in case: `oasis://<namespace>/<Name>[@<ref>]:<subpath>` at
+	* The URL of the file an oField IRI names, exact in case: `ofield://<namespace>/<Name>[@<ref>]:<subpath>` at
 	* `<base><namespace>/<Name>[@<ref>]/<subpath>`, the ref one segment however many slashes it holds, and `<Name>.ts`
-	* where it names no subpath. `oasis://npm/…` it passes on.
+	* where it names no subpath. `ofield://npm/…` it passes on.
 	*/
 	resolve(specifier) {
-		if (!specifier.startsWith("oasis:")) return void 0;
-		const { namespace, name, ref, subpath } = new OasisIri(specifier).model;
+		if (!specifier.startsWith("ofield:")) return void 0;
+		const { namespace, name, ref, subpath } = new OFieldIri(specifier).model;
 		if (namespace === "npm") return void 0;
 		const tree = ref === void 0 ? name : `${name}@${encodeURIComponent(ref)}`;
 		return new URL(`${namespace}/${tree}/${subpath ?? `${name}.ts`}`, this.model.base).href;
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/browser/BrowserStorage.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/browser/BrowserStorage.ts
 /**
 * Purpose: find what a SmartObject is stored as, from a tab.
 *
 * Intention: realizes the {@link Storage} a Persistence uses over the
-* browser's `fetch`, which reads only by waiting: an oasis IRI at the URL
+* browser's `fetch`, which reads only by waiting: an oField IRI at the URL
 * the tab's {@link ModuleHookChain} names for it, any other address as a
 * URL read from the place it anchors to, and a folder as its server lists
 * it. What a read fetched, the tab's kernel keeps for the reads that answer
@@ -1153,17 +1203,17 @@ var BrowserOasisHook = class extends TypedSmartObject {
 var BrowserStorage = class extends TypedSmartObject {
 	#hooks;
 	#fetched;
-	/** Over the chain an oasis IRI resolves through, and the texts the tab's reads have fetched, by location. */
+	/** Over the chain an oField IRI resolves through, and the texts the tab's reads have fetched, by location. */
 	constructor(model, hooks, fetched) {
 		super(model);
 		this.#hooks = hooks;
 		this.#fetched = fetched;
 	}
-	/** The location an address names: an oasis IRI in canonical form, any other address as the URL it names from the anchor; a fragment dropped. */
+	/** The location an address names: an oField IRI in canonical form, any other address as the URL it names from the anchor; a fragment dropped. */
 	location(address) {
 		if (address === "") throw new Error("an empty address names no model");
 		const located = address.split("#")[0];
-		if (located.startsWith("oasis:")) return new OasisIri(located).toString();
+		if (located.startsWith("ofield:")) return new OFieldIri(located).toString();
 		return new URL(located, this.model.anchor).href;
 	}
 	/**
@@ -1197,7 +1247,7 @@ var BrowserStorage = class extends TypedSmartObject {
 	*/
 	async list(address) {
 		const location = this.location(address);
-		const url = location.startsWith("oasis:") ? this.#folderOf(location) : location.endsWith("/") ? location : `${location}/`;
+		const url = location.startsWith("ofield:") ? this.#folderOf(location) : location.endsWith("/") ? location : `${location}/`;
 		const response = await fetch(url, { headers: { accept: "application/json" } });
 		if (response.status === 404 || response.status === 410) return [];
 		if (!response.ok) throw new Error(`${url} answered ${response.status}`);
@@ -1223,8 +1273,8 @@ var BrowserStorage = class extends TypedSmartObject {
 		throw new Error(`a tab realizes nothing at ${location}`);
 	}
 	#folderOf(location) {
-		const named = new OasisIri(location).model;
-		const below = new OasisIri({
+		const named = new OFieldIri(location).model;
+		const below = new OFieldIri({
 			...named,
 			subpath: named.subpath === void 0 ? "_" : `${named.subpath.replace(/\/$/, "")}/_`
 		}).toString();
@@ -1235,7 +1285,7 @@ var BrowserStorage = class extends TypedSmartObject {
 	async #fetch(location, afresh = false) {
 		const kept = afresh ? void 0 : this.#fetched.get(location);
 		if (kept !== void 0) return kept;
-		const url = location.startsWith("oasis:") ? this.#hooks.resolve(location, this.model.anchor) : location;
+		const url = location.startsWith("ofield:") ? this.#hooks.resolve(location, this.model.anchor) : location;
 		if (url === void 0) throw new Error(`no hook resolves ${location}`);
 		const response = await fetch(url, afresh ? { cache: "no-cache" } : void 0);
 		if (response.status === 404 || response.status === 410) return void 0;
@@ -1246,7 +1296,7 @@ var BrowserStorage = class extends TypedSmartObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/browser/BrowserKernel.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/browser/BrowserKernel.ts
 var __rewriteRelativeImportExtension$2 = function(path, preserveJsx) {
 	if (typeof path === "string" && /^\.\.?\//.test(path)) return path.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m, tsx, d, ext, cm) {
 		return tsx ? preserveJsx ? ".jsx" : ".js" : d && (!ext || !cm) ? m : d + ext + "." + cm.toLowerCase() + "js";
@@ -1256,12 +1306,12 @@ var __rewriteRelativeImportExtension$2 = function(path, preserveJsx) {
 /**
 * Purpose: make loading work in a tab.
 *
-* Intention: realizes {@link BaseKernel} over the page the Universal OS was
+* Intention: realizes {@link Manu} over the page the 0field was
 * loaded into: the script tags of its own file name the programs a tab is
 * started with, where each is shown and in which view, its {@link ModuleHookChain} carries
-* the {@link BrowserOasisHook}, and its storage, which a Persistence reads,
+* the {@link BrowserOFieldHook}, and its storage, which a Persistence reads,
 * is a {@link BrowserStorage}. It hands out a {@link Program} for each
-* tag naming one. Its model names the Universal OS it loads for.
+* tag naming one. Its model names the 0field it loads for.
 */
 var BrowserKernel = class BrowserKernel extends TypedSmartObject {
 	hooks = new ModuleHookChain();
@@ -1269,16 +1319,16 @@ var BrowserKernel = class BrowserKernel extends TypedSmartObject {
 	#recorded = /* @__PURE__ */ new WeakMap();
 	#started;
 	/**
-	* Adds the {@link BrowserOasisHook} to its chain, over the base the tags of its file name in `data-oasis`, or else
+	* Adds the {@link BrowserOFieldHook} to its chain, over the base the tags of its file name in `data-ofield`, or else
 	* the root of the host its file came from; refused, naming them, where its tags name more than one.
 	*/
 	async start() {
-		const named = new Set(this.#tags().flatMap((tag) => tag.dataset.oasis === void 0 ? [] : [new URL(tag.dataset.oasis, document.baseURI).href]));
-		if (named.size > 1) throw new Error(`the script tags of ${this.model.universalos} name more than one data-oasis: ${[...named].join(", ")}`);
-		this.hooks.use(new BrowserOasisHook({ base: [...named][0] ?? new URL("/", this.model.universalos).href }));
+		const named = new Set(this.#tags().flatMap((tag) => tag.dataset.ofield === void 0 ? [] : [new URL(tag.dataset.ofield, document.baseURI).href]));
+		if (named.size > 1) throw new Error(`the script tags of ${this.model.oField} name more than one data-ofield: ${[...named].join(", ")}`);
+		this.hooks.use(new BrowserOFieldHook({ base: [...named][0] ?? new URL("/", this.model.oField).href }));
 	}
 	/**
-	* A program for each script tag of its file naming one in `data-start`, in the page's order: its address an oasis
+	* A program for each script tag of its file naming one in `data-start`, in the page's order: its address an oField
 	* IRI as the hooks resolve it, or a URL read from the page; its words the JSON array of strings in `data-words`, none
 	* where it names none, refused, naming it, where it holds anything else; shown where `data-attach` names, in the
 	* view whose file `data-view` names, read as its address is; refused, naming it, where either names a file on a data
@@ -1305,10 +1355,10 @@ var BrowserKernel = class BrowserKernel extends TypedSmartObject {
 		return new BrowserStorage({ anchor: this.anchor(place) }, this.hooks, this.#fetched);
 	}
 	/**
-	* The class a type names, exported by default from its module. A SmartObject class named by an oasis IRI is recorded
+	* The class a type names, exported by default from its module. A SmartObject class named by an oField IRI is recorded
 	* through its own `loaded`, the first time this kernel loads it and before any program has built it, as loaded from
-	* that IRI's namespace and the version its corpus's `corpus.jsonld` names, so its element is named after that
-	* release; a `corpus.jsonld` that holds no JSON object, or a version no element name holds, is refused, naming it.
+	* that IRI's namespace and the version its workbench's `workbench.jsonld` names, so its element is named after that
+	* release; a `workbench.jsonld` that holds no JSON object, or a version no element name holds, is refused, naming it.
 	*/
 	async classOf(type, place) {
 		const created = (await import(__rewriteRelativeImportExtension$2(this.hooks.moduleOf(type, this.anchor(place))))).default;
@@ -1325,12 +1375,12 @@ var BrowserKernel = class BrowserKernel extends TypedSmartObject {
 		return recording;
 	}
 	async #recording(type, created, place) {
-		const iri = OasisIri.of(type);
+		const iri = OFieldIri.of(type);
 		if (iri === void 0 || customElements.getName(created) !== null) return;
-		const corpus = Corpus.stored(type);
+		const workbench = Workbench.stored(type);
 		const storage = this.storage(place);
-		if (!await storage.has(corpus)) return;
-		const version = BrowserKernel.#version(corpus, await storage.get(corpus));
+		if (!await storage.has(workbench)) return;
+		const version = BrowserKernel.#version(workbench, await storage.get(workbench));
 		if (version !== void 0) created.loaded(created, {
 			namespace: iri.model.namespace,
 			version
@@ -1370,7 +1420,7 @@ var BrowserKernel = class BrowserKernel extends TypedSmartObject {
 		target.append(element);
 	}
 	#tags() {
-		return [...document.querySelectorAll("script[src]")].filter((tag) => new URL(tag.src, document.baseURI).href === this.model.universalos);
+		return [...document.querySelectorAll("script[src]")].filter((tag) => new URL(tag.src, document.baseURI).href === this.model.oField);
 	}
 	static #words(written) {
 		if (written === void 0) return [];
@@ -1386,7 +1436,7 @@ var BrowserKernel = class BrowserKernel extends TypedSmartObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/oasis/npm/BareSpecifier.ts
+//#region dependencies/metatrom-ag/Manu/main/common/0field/npm/BareSpecifier.ts
 /**
 * Purpose: tell a package's name from the path inside it in a bare import.
 *
@@ -1429,7 +1479,7 @@ var BareSpecifier = class BareSpecifier extends TypedSmartObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/oasis/npm/CommonJsModule.ts
+//#region dependencies/metatrom-ag/Manu/main/common/0field/npm/CommonJsModule.ts
 /**
 * Purpose: a stored CommonJS module runs once and hands its exports to an ES
 * import, the same in every habitat.
@@ -1517,14 +1567,14 @@ var CommonJsModule = class CommonJsModule {
 		this.module.loaded = true;
 	}
 };
-const EXPORTED = "metatrom.oasis.commonjs";
+const EXPORTED = "metatrom.oField.commonjs";
 const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
 function exported() {
 	const global = globalThis;
 	return global[Symbol.for(EXPORTED)] ??= /* @__PURE__ */ new Map();
 }
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/oasis/json/JsonObject.ts
+//#region dependencies/metatrom-ag/Manu/main/common/0field/json/JsonObject.ts
 /**
 * Purpose: keep the JSON object a file holds as a SmartObject's model.
 *
@@ -1542,7 +1592,7 @@ var JsonObject = class JsonObject extends TypedSmartObject.Class {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/oasis/npm/PackageManifest.ts
+//#region dependencies/metatrom-ag/Manu/main/common/0field/npm/PackageManifest.ts
 /**
 * Purpose: say which file of a package an import of it gets.
 *
@@ -1627,31 +1677,31 @@ var PackageManifest = class extends JsonObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/oasis/Tags.ts
+//#region dependencies/metatrom-ag/Manu/main/common/0field/Tags.ts
 /**
-* Purpose: say which releases of a corpus a store holds, each by its tag,
+* Purpose: say which releases of a workbench a store holds, each by its tag,
 * and where its tree stands.
 *
-* Intention: reads the trees ExtendedKernel's installer keeps in a store
-* through a {@link Folder}, each by the version its {@link Corpus} names —
+* Intention: reads the trees Core's installer keeps in a store
+* through a {@link Folder}, each by the version its {@link Workbench} names —
 * written by Descriptor's Generator, so a tree says its own version;
-* {@link Releases} chooses the latest. The oasis hook uses it to find the
-* tree a tag or no ref names, and the stores to find the corpora they hold
+* {@link Releases} chooses the latest. The oField hook uses it to find the
+* tree a tag or no ref names, and the stores to find the workbenches they hold
 * a release of.
 */
 var Tags = class extends TypedSmartObject {
 	/**
-	* Reads the tags of a corpus, `<namespace>/<Name>`, from its trees in a store, `oasis/<namespace>/<Name>/<sha>/`: none
+	* Reads the tags of a workbench, `<namespace>/<Name>`, from its trees in a store, `0field/<namespace>/<Name>/<sha>/`: none
 	* where the store holds no tree of it; refused, naming the tree and saying to rebuild the store, where a tree's
-	* `corpus.jsonld` names no stable version `X.Y.Z` — a store an older installer built. A folder whose name starts with a
+	* `workbench.jsonld` names no stable version `X.Y.Z` — a store an older installer built. A folder whose name starts with a
 	* dot is the installer's, still being written, and is no tree.
 	*/
 	constructor(store, id) {
 		const read = {};
-		for (const tree of store.folder(`oasis/${id}`).entries) {
+		for (const tree of store.folder(`0field/${id}`).entries) {
 			if (!isFolder(tree) || tree.name.startsWith(".")) continue;
-			const version = Corpus.at(tree).version;
-			if (version === void 0 || version.startsWith("v") || new Releases([version]).latest !== version) throw new Error(`${tree.path}/corpus.jsonld names no stable version: rebuild the store`);
+			const version = Workbench.at(tree).version;
+			if (version === void 0 || version.startsWith("v") || new Releases([version]).latest !== version) throw new Error(`${tree.path}/workbench.jsonld names no stable version: rebuild the store`);
 			read[`v${version}`] = tree.name;
 		}
 		super(read);
@@ -1662,16 +1712,16 @@ var Tags = class extends TypedSmartObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/node/loading/NodeStores.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/node/loading/NodeStores.ts
 /**
 * Purpose: find the stores of the host this process runs on, in the order
-* they are read, and the corpora they hold.
+* they are read, and the workbenches they hold.
 *
 * Intention: realizes {@link Stores} over Node's API — `process.env`,
 * `os.homedir()`, {@link ReadOnlyNodeFolder.native} — which Node, Deno and
 * Bun all implement; {@link NodeStores.of} reads the host into its
 * {@link StoresModel}, and every store it hands out is a
-* {@link ReadOnlyNodeFolder}. It uses each corpus's {@link Tags}.
+* {@link ReadOnlyNodeFolder}. It uses each workbench's {@link Tags}.
 */
 var NodeStores = class NodeStores extends TypedSmartObject {
 	/** The stores of this host, found from its platform, its home folder and `env`. */
@@ -1679,29 +1729,29 @@ var NodeStores = class NodeStores extends TypedSmartObject {
 		const { homedir } = process.getBuiltinModule("node:os");
 		return new NodeStores({
 			platform: process.platform,
-			...env.OASIS_HOME ? { oasisHome: ReadOnlyNodeFolder.native(env.OASIS_HOME).path } : {},
+			...env.OFIELD_HOME ? { oFieldHome: ReadOnlyNodeFolder.native(env.OFIELD_HOME).path } : {},
 			home: ReadOnlyNodeFolder.native(homedir()).path,
 			...env.ProgramData ? { programData: ReadOnlyNodeFolder.native(env.ProgramData).path } : {}
 		});
 	}
 	get all() {
-		if (this.model.oasisHome !== void 0) return [this.own];
+		if (this.model.oFieldHome !== void 0) return [this.own];
 		return [this.shared, this.own].filter((store) => store?.exists === true);
 	}
 	get own() {
-		if (this.model.oasisHome === void 0) return this.folderAt(this.model.home).folder(".oasis");
-		const oasisHome = this.folderAt(this.model.oasisHome);
-		if (!oasisHome.exists) throw new Error(`OASIS_HOME is no folder: ${oasisHome.path}`);
-		return oasisHome;
+		if (this.model.oFieldHome === void 0) return this.folderAt(this.model.home).folder(".0field");
+		const oFieldHome = this.folderAt(this.model.oFieldHome);
+		if (!oFieldHome.exists) throw new Error(`OFIELD_HOME is no folder: ${oFieldHome.path}`);
+		return oFieldHome;
 	}
 	get shared() {
-		if (this.model.platform === "darwin") return this.folderAt("/Users/Shared/.oasis");
-		if (this.model.platform === "win32") return this.model.programData === void 0 ? void 0 : this.folderAt(this.model.programData).folder("oasis");
-		return this.folderAt("/var/lib/oasis");
+		if (this.model.platform === "darwin") return this.folderAt("/Users/Shared/.0field");
+		if (this.model.platform === "win32") return this.model.programData === void 0 ? void 0 : this.folderAt(this.model.programData).folder("0field");
+		return this.folderAt("/var/lib/0field");
 	}
-	get corpora() {
+	get workbenches() {
 		const folders = (folder) => folder.entries.filter(isFolder);
-		const named = this.all.flatMap((store) => folders(store.folder("oasis")).flatMap((namespace) => folders(namespace).map((corpus) => `${namespace.name}/${corpus.name}`).filter((id) => new Tags(store, id).latest !== void 0)));
+		const named = this.all.flatMap((store) => folders(store.folder("0field")).flatMap((namespace) => folders(namespace).map((workbench) => `${namespace.name}/${workbench.name}`).filter((id) => new Tags(store, id).latest !== void 0)));
 		return [...new Set(named)].sort();
 	}
 	/** The {@link Folder} at an absolute POSIX path, a {@link ReadOnlyNodeFolder}. */
@@ -1710,18 +1760,18 @@ var NodeStores = class NodeStores extends TypedSmartObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/node/loading/NodeNpmHook.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/node/loading/NodeNpmHook.ts
 /**
 * Purpose: load an npm package from the store on this host's disk, without
 * `node_modules`.
 *
-* Intention: realizes {@link ModuleHook} for `oasis://npm/…` and for the bare
+* Intention: realizes {@link ModuleHook} for `ofield://npm/…` and for the bare
 * and `#…` imports a stored package makes, over Node's API —
 * {@link NodeStores}, {@link ReadOnlyNodeFolder}, `node:path`, `node:module` —
 * which Node, Deno and Bun all implement. It reads a package through its
 * {@link PackageManifest} and the dependencies the `uses` of its descriptor,
 * `<version>.descriptor.jsonld` beside its version, names,
-* a specifier as an {@link OasisIri} or a {@link BareSpecifier}, a version
+* a specifier as an {@link OFieldIri} or a {@link BareSpecifier}, a version
 * through {@link Releases}, and hands a stored CommonJS module on through a
 * {@link CommonJsModule}.
 */
@@ -1729,9 +1779,9 @@ var NodeNpmHook = class NodeNpmHook extends TypedSmartObject {
 	/** A file inside a stored package below a store: `/npm/<name>/<version>/package/…`, naming the package's name and version. */
 	static stored = /\/npm\/((?:@[^/]+\/)?[^/]+)\/([^/]+)\/package\/./;
 	name = "npm";
-	schemes = ["oasis"];
+	schemes = ["ofield"];
 	/**
-	* The stored file an import names: `oasis://npm/…` by its version — the latest release without one, the highest
+	* The stored file an import names: `ofield://npm/…` by its version — the latest release without one, the highest
 	* within a range — a bare import by the exact version its package's descriptor names in `uses`, or its own version
 	* where it names the importing package itself, and a `#…` import by the `imports` of the `package.json` governing
 	* the importing file; the {@link PackageManifest} picks the file. A builtin it passes on.
@@ -1740,10 +1790,10 @@ var NodeNpmHook = class NodeNpmHook extends TypedSmartObject {
 		return this.#resolved(specifier, parentURL, "import");
 	}
 	#resolved(specifier, parentURL, kind) {
-		if (specifier.startsWith("oasis:")) {
-			const { source, namespace, name, ref, subpath } = new OasisIri(specifier).model;
+		if (specifier.startsWith("ofield:")) {
+			const { source, namespace, name, ref, subpath } = new OFieldIri(specifier).model;
 			if (namespace !== "npm") return void 0;
-			if (source !== void 0) throw new Error(`oasis sources are not read yet: ${source}`);
+			if (source !== void 0) throw new Error(`oField sources are not read yet: ${source}`);
 			return this.#entry(name, ref, subpath === void 0 ? "." : `./${subpath}`, kind);
 		}
 		if (parentURL !== void 0 && specifier.startsWith("#")) return this.#imported(specifier, parentURL, kind);
@@ -1944,7 +1994,7 @@ var NodeNpmHook = class NodeNpmHook extends TypedSmartObject {
 		if (uses === void 0) return used;
 		if (!Array.isArray(uses)) throw new Error(`uses is no list in ${descriptor.path}`);
 		for (const id of uses) {
-			const iri = typeof id === "string" ? OasisIri.of(id)?.model : void 0;
+			const iri = typeof id === "string" ? OFieldIri.of(id)?.model : void 0;
 			if (iri?.namespace !== "npm" || iri.ref === void 0) throw new Error(`no npm package at a version in the uses of ${descriptor.path}: ${JSON.stringify(id)}`);
 			used.set(iri.name, iri.ref);
 		}
@@ -1972,9 +2022,9 @@ var NodeNpmHook = class NodeNpmHook extends TypedSmartObject {
 	}
 };
 const RESOLVE = /\bimport\.meta\.resolve\s*\(/;
-const RESOLVER = "metatrom.oasis.resolve";
+const RESOLVER = "metatrom.oField.resolve";
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/file-system/git/GitNotes.ts
+//#region dependencies/metatrom-ag/Manu/main/common/file-system/git/GitNotes.ts
 /**
 * Purpose: say where in a notes tree the note of a commit stands, whether git
 * has fanned the tree out or not.
@@ -2038,36 +2088,36 @@ var GitNotes = class GitNotes extends TypedSmartObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/node/loading/NodeOasisHook.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/node/loading/NodeOFieldHook.ts
 /**
-* Purpose: load a SmartObject by its oasis IRI from this host's disk.
+* Purpose: load a SmartObject by its oField IRI from this host's disk.
 *
-* Intention: realizes {@link ModuleHook} for the `oasis` scheme over Node's
+* Intention: realizes {@link ModuleHook} for the `ofield` scheme over Node's
 * API — {@link NodeStores}, {@link ReadOnlyNodeFolder} — which Node, Deno and
 * Bun all implement, leaving to the runtime loading the file it resolves. It
-* reads a URI as an {@link OasisIri}, a range through {@link Releases}, a
-* branch from the {@link Corpus} the importing file belongs to, and a tag, or
+* reads a URI as an {@link OFieldIri}, a range through {@link Releases}, a
+* branch from the {@link Workbench} the importing file belongs to, and a tag, or
 * a URI naming no ref, by the {@link Tags} of each store.
 */
-var NodeOasisHook = class extends TypedSmartObject {
-	name = "oasis";
-	schemes = ["oasis"];
+var NodeOFieldHook = class extends TypedSmartObject {
+	name = "ofield";
+	schemes = ["ofield"];
 	/**
-	* The file an oasis IRI names: a tag or a sha from the stores, a range as the highest release of every store's tags
-	* within it; a branch from the {@link Corpus} the importing file belongs to, which also names the branch taken when
-	* the URI names no ref; the importing file's own corpus, named with no ref, from the working tree it stands in;
-	* elsewhere no ref, or `latest`, is the latest release the stores hold. `oasis://npm/…` it passes on.
+	* The file an oField IRI names: a tag or a sha from the stores, a range as the highest release of every store's tags
+	* within it; a branch from the {@link Workbench} the importing file belongs to, which also names the branch taken when
+	* the URI names no ref; the importing file's own workbench, named with no ref, from the working tree it stands in;
+	* elsewhere no ref, or `latest`, is the latest release the stores hold. `ofield://npm/…` it passes on.
 	*/
 	resolve(specifier, parentURL) {
-		if (!specifier.startsWith("oasis:")) return void 0;
-		const iri = new OasisIri(specifier);
+		if (!specifier.startsWith("ofield:")) return void 0;
+		const iri = new OFieldIri(specifier);
 		if (iri.model.namespace === "npm") return void 0;
 		const entry = this.tree(specifier, parentURL).file(entryOf(iri));
 		if (!entry.exists) throw new Error(`no ${entry.path} for ${specifier}`);
 		return this.url(entry);
 	}
 	/**
-	* The tree an oasis IRI names on this host, as {@link NodeOasisHook.resolve} finds it, whatever its subpath; refused,
+	* The tree an oField IRI names on this host, as {@link NodeOFieldHook.resolve} finds it, whatever its subpath; refused,
 	* naming where it looked, where there is none.
 	*/
 	tree(specifier, parentURL) {
@@ -2075,15 +2125,15 @@ var NodeOasisHook = class extends TypedSmartObject {
 		if (tree === void 0) throw new Error(missing());
 		return tree;
 	}
-	/** The tree an oasis IRI names on this host, as {@link NodeOasisHook.tree} finds it; none where this host holds none. */
+	/** The tree an oField IRI names on this host, as {@link NodeOFieldHook.tree} finds it; none where this host holds none. */
 	find(specifier, parentURL) {
 		return this.#lookup(specifier, parentURL).tree;
 	}
 	#lookup(specifier, parentURL) {
-		const { source, namespace, name, ref } = new OasisIri(specifier).model;
-		if (source !== void 0) throw new Error(`oasis sources are not read yet: ${source}`);
+		const { source, namespace, name, ref } = new OFieldIri(specifier).model;
+		if (source !== void 0) throw new Error(`oField sources are not read yet: ${source}`);
 		const id = `${namespace}/${name}`;
-		const repository = Corpus.above(parentURL === void 0 ? void 0 : this.folderOf(parentURL));
+		const repository = Workbench.above(parentURL === void 0 ? void 0 : this.folderOf(parentURL));
 		const own = ref === void 0 ? repository?.own(id) : void 0;
 		if (own !== void 0) return {
 			tree: own,
@@ -2091,7 +2141,7 @@ var NodeOasisHook = class extends TypedSmartObject {
 		};
 		const wanted = ref ?? repository?.branch(id);
 		const stores = this.stores();
-		const homes = stores.map((store) => store.folder(`oasis/${id}`));
+		const homes = stores.map((store) => store.folder(`0field/${id}`));
 		const tags = new Map(stores.flatMap((store) => Object.entries(new Tags(store, id).model)));
 		const latest = wanted === void 0 || wanted === "latest";
 		const range = !latest && Releases.range.test(wanted);
@@ -2118,7 +2168,7 @@ var NodeOasisHook = class extends TypedSmartObject {
 	/**
 	* The folder holding the file a URL names, when it names one on this host.
 	* Law: `folderOf(url(file))` holds `file`, `url(folderOf(url(file)).file(file.name))` being `url(file)` — sampled
-	* in `NodeOasisHook.test.ts`.
+	* in `NodeOFieldHook.test.ts`.
 	*/
 	folderOf(url) {
 		return url.startsWith("file:") ? ReadOnlyNodeFolder.fromUrl(url).parent : void 0;
@@ -2131,13 +2181,13 @@ var NodeOasisHook = class extends TypedSmartObject {
 		return ReadOnlyNodeFolder.urlOf(this.model.realPaths ? ReadOnlyNodeFolder.native(file.path).real : file);
 	}
 };
-/** The file an oasis IRI names within its tree: its subpath, or, naming none, the corpus's own SmartObject `<Name>.ts`. */
+/** The file an oField IRI names within its tree: its subpath, or, naming none, the workbench's own SmartObject `<Name>.ts`. */
 function entryOf(iri) {
 	return iri.model.subpath ?? `${iri.model.name}.ts`;
 }
 /**
-* The descriptor of what an oasis IRI names within its tree: the descriptor it names, the one beside the file it names,
-* or, where it names a data file, that of the corpus's own SmartObject.
+* The descriptor of what an oField IRI names within its tree: the descriptor it names, the one beside the file it names,
+* or, where it names a data file, that of the workbench's own SmartObject.
 */
 function descriptorOf(iri) {
 	const entry = entryOf(iri);
@@ -2150,28 +2200,28 @@ function descriptorBeside(path) {
 	return /\.[jt]sx?$/.test(path) ? `${path.replace(/\.[jt]sx?$/, "")}.descriptor.jsonld` : void 0;
 }
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/node/file-system/ReadOnlyNodeStorage.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/node/file-system/ReadOnlyNodeStorage.ts
 /**
 * Purpose: find what a SmartObject is stored as on this host's disk, and
 * there the repositories that are SmartObjects themselves.
 *
 * Intention: has the shape of the storage a Persistence uses, over
 * Node's API, which Node, Deno and Bun all implement. It finds a tree
-* through the {@link NodeOasisHook}, an npm package's version through
+* through the {@link NodeOFieldHook}, an npm package's version through
 * {@link NodeStores} and {@link Releases}, realizes a repository's root as
-* its {@link Corpus}, and finds a note of a notes ref through {@link GitNotes}.
+* its {@link Workbench}, and finds a note of a notes ref through {@link GitNotes}.
 */
 var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 	/**
-	* The location an address names: an oasis IRI as it stands, refused unless in canonical form, a path or a `file:` URL
+	* The location an address names: an oField IRI as it stands, refused unless in canonical form, a path or a `file:` URL
 	* as its `file:` URL, a fragment dropped; no other scheme is read.
 	*/
 	location(address) {
 		if (address === "") throw new Error("an empty address names no model");
-		if (address.startsWith("oasis:")) {
+		if (address.startsWith("ofield:")) {
 			const located = address.split("#")[0];
 			if (ReadOnlyNodeStorage.#npm(located) === void 0) this.#parsed(located);
-			return new OasisIri(located).toString();
+			return new OFieldIri(located).toString();
 		}
 		const scheme = /^([A-Za-z][A-Za-z\d+.-]+):/.exec(address)?.[1];
 		if (scheme !== void 0 && scheme.toLowerCase() !== "file") throw new Error(`no storage here reads ${scheme}: ${address}`);
@@ -2186,38 +2236,38 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 	}
 	/** {@link ReadOnlyNodeStorage.has}, answered at once. */
 	hasSync(location) {
-		if (!location.startsWith("oasis:")) return new ReadOnlyNodeFile(ReadOnlyNodeFolder.fromUrl(location).path).exists;
+		if (!location.startsWith("ofield:")) return new ReadOnlyNodeFile(ReadOnlyNodeFolder.fromUrl(location).path).exists;
 		const npm = ReadOnlyNodeStorage.#npm(location);
 		if (npm !== void 0) return this.#described(npm) !== void 0;
 		const { subpath, tree: address } = this.#parsed(location);
-		const tree = new NodeOasisHook().find(location, this.model.main);
+		const tree = new NodeOFieldHook().find(location, this.model.main);
 		return tree !== void 0 && subpath !== void 0 && tree.file(ReadOnlyNodeStorage.#noted(tree, address.ref, subpath)).exists;
 	}
 	/**
-	* Whether a location names a repository by its root — a `file:` URL, or an oasis IRI naming no subpath whose tree is
+	* Whether a location names a repository by its root — a `file:` URL, or an oField IRI naming no subpath whose tree is
 	* a git checkout; a tree in the stores holds no `.git`, whatever it commits, and is none.
 	*/
 	realizes(location) {
 		const folder = this.#folder(location);
-		return folder !== void 0 && Corpus.above(folder)?.path === folder.path;
+		return folder !== void 0 && Workbench.above(folder)?.path === folder.path;
 	}
 	/**
-	* The Corpus a location names by its root, named by its root's real `file:` URL, so every address of one names
+	* The Workbench a location names by its root, named by its root's real `file:` URL, so every address of one names
 	* one, however a link on the way spells it; refused for a folder below a root, naming the root.
 	*/
 	realized(location) {
 		const folder = this.#folder(location);
-		const repository = folder === void 0 ? void 0 : Corpus.above(folder);
+		const repository = folder === void 0 ? void 0 : Workbench.above(folder);
 		if (folder === void 0 || repository === void 0) throw new Error(`no repository's root at ${location}`);
 		if (repository.path !== folder.path) throw new Error(this.#below(location, repository));
-		return Corpus.at(folder, ReadOnlyNodeFolder.urlOf(folder));
+		return Workbench.at(folder, ReadOnlyNodeFolder.urlOf(folder));
 	}
 	#folder(location) {
 		let named;
-		if (location.startsWith("oasis:")) {
-			if (ReadOnlyNodeStorage.#npm(location) !== void 0 || new OasisIri(location).model.source !== void 0) return void 0;
+		if (location.startsWith("ofield:")) {
+			if (ReadOnlyNodeStorage.#npm(location) !== void 0 || new OFieldIri(location).model.source !== void 0) return void 0;
 			if (this.#parsed(location).subpath !== void 0) return void 0;
-			const tree = new NodeOasisHook().find(location, this.model.main);
+			const tree = new NodeOFieldHook().find(location, this.model.main);
 			if (tree === void 0 || !(tree.folder(".git").exists || tree.file(".git").exists)) return void 0;
 			named = ReadOnlyNodeFolder.native(tree.path);
 		} else named = ReadOnlyNodeFolder.fromUrl(location);
@@ -2232,9 +2282,9 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 		return `${location} lies in the repository at ${repository.path}, which is named by its root`;
 	}
 	/**
-	* The text at a location, read as UTF-8. An oasis IRI names a file in the tree the {@link NodeOasisHook} finds for
+	* The text at a location, read as UTF-8. An oField IRI names a file in the tree the {@link NodeOFieldHook} finds for
 	* it from the started file's place: a tag or a sha in the stores, a branch in its repository. An npm package's,
-	* `oasis://npm/<name>@<ref>`, names instead the node describing a version, `npm/<name>/<version>.descriptor.jsonld`,
+	* `ofield://npm/<name>@<ref>`, names instead the node describing a version, `npm/<name>/<version>.descriptor.jsonld`,
 	* beside the version folder its ref names among those the stores describe: exact, the highest within a range, the
 	* latest for none, as {@link Releases} reads a ref. A file of the package names none.
 	*/
@@ -2245,8 +2295,8 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 	getSync(location) {
 		const file = this.#file(location);
 		if (!file.exists) {
-			const folder = location.startsWith("oasis:") ? void 0 : this.#folder(location);
-			const repository = folder === void 0 ? void 0 : Corpus.above(folder);
+			const folder = location.startsWith("ofield:") ? void 0 : this.#folder(location);
+			const repository = folder === void 0 ? void 0 : Workbench.above(folder);
 			throw new Error(repository === void 0 || repository.path === folder?.path ? `no model at ${location}` : this.#below(location, repository));
 		}
 		const bytes = file.read();
@@ -2258,7 +2308,7 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 	}
 	/**
 	* The location of every text below an address, sorted: every name beginning with `.` skipped — a worktree's `.git`
-	* among them — and, in a tree, every name an oasis IRI cannot hold as it stands, one with `#`, `%` or `?`.
+	* among them — and, in a tree, every name an oField IRI cannot hold as it stands, one with `#`, `%` or `?`.
 	*/
 	async list(address) {
 		return this.listSync(address);
@@ -2266,7 +2316,7 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 	/** {@link ReadOnlyNodeStorage.list}, answered at once. */
 	listSync(address) {
 		const located = this.location(address);
-		const { folder, at, held } = located.startsWith("oasis:") ? this.#oasisFolder(located) : {
+		const { folder, at, held } = located.startsWith("ofield:") ? this.#oFieldFolder(located) : {
 			folder: ReadOnlyNodeFolder.fromUrl(located),
 			at: (file) => ReadOnlyNodeFolder.urlOf(file),
 			held: () => true
@@ -2275,7 +2325,7 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 		return [...new Set([...stored(folder)].filter(held).map(at))].sort();
 	}
 	#file(location) {
-		if (!location.startsWith("oasis:")) return new ReadOnlyNodeFile(ReadOnlyNodeFolder.fromUrl(location).path);
+		if (!location.startsWith("ofield:")) return new ReadOnlyNodeFile(ReadOnlyNodeFolder.fromUrl(location).path);
 		const npm = ReadOnlyNodeStorage.#npm(location);
 		if (npm !== void 0) {
 			const described = this.#described(npm);
@@ -2283,17 +2333,17 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 			return described;
 		}
 		const { tree, subpath } = this.#tree(location);
-		if (subpath === void 0) throw new Error(`an oasis URI names a model by its subpath: ${location}`);
+		if (subpath === void 0) throw new Error(`an oField URI names a model by its subpath: ${location}`);
 		return tree.file(subpath);
 	}
-	#oasisFolder(location) {
+	#oFieldFolder(location) {
 		const { tree, subpath, address } = this.#tree(location);
 		const folder = subpath === void 0 ? tree : tree.folder(subpath);
 		const notes = GitNotes.held(address.ref) && subpath === void 0;
 		const named = (below) => notes ? GitNotes.shaOf(below) ?? below : below;
 		return {
 			folder,
-			at: (file) => `${new OasisIri({
+			at: (file) => `${new OFieldIri({
 				...address,
 				subpath: named(file.path.slice(tree.path.length + 1))
 			})}`,
@@ -2302,7 +2352,7 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 	}
 	#tree(location) {
 		const { subpath, tree } = this.#parsed(location);
-		const folder = new NodeOasisHook().tree(location, this.model.main);
+		const folder = new NodeOFieldHook().tree(location, this.model.main);
 		return {
 			tree: folder,
 			subpath: subpath === void 0 ? void 0 : ReadOnlyNodeStorage.#noted(folder, tree.ref, subpath),
@@ -2310,7 +2360,7 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 		};
 	}
 	static #npm(location) {
-		const { source, namespace, name, ref, subpath } = new OasisIri(location).model;
+		const { source, namespace, name, ref, subpath } = new OFieldIri(location).model;
 		if (namespace !== "npm") return void 0;
 		if (source !== void 0 || subpath !== void 0) throw new Error(`a model is stored with a SmartObject, or as an npm package, not in an npm package: ${location}`);
 		return {
@@ -2327,7 +2377,7 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 		return nodes.find((node) => node.name === `${version}${suffix}`);
 	}
 	#parsed(address) {
-		const { subpath, ...tree } = new OasisIri(address.split("#")[0]).model;
+		const { subpath, ...tree } = new OFieldIri(address.split("#")[0]).model;
 		if (tree.namespace === "npm") throw new Error(`a model is stored with a SmartObject, not in an npm package: ${address}`);
 		if (subpath !== void 0 && /[%?]/.test(subpath)) throw new Error(`a model's subpath holds no % or ?: ${address}`);
 		return {
@@ -2344,7 +2394,7 @@ function* stored(folder) {
 	else yield entry;
 }
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/persistence/relations/Arcs.ts
+//#region dependencies/metatrom-ag/Manu/main/common/persistence/relations/Arcs.ts
 /**
 * Purpose: lead from one SmartObject to SmartObjects of one class, by the
 * ids its model names.
@@ -2396,7 +2446,7 @@ var Arcs = class Arcs extends TypedSmartObject.Class {
 	}
 	static #by(id, from) {
 		const restoring = (from instanceof TypedSmartObject ? Arcs.#made.get(from) : void 0) ?? (Arcs.#restores(from) ? from : void 0) ?? Arcs.#restoring;
-		if (restoring === void 0) throw new Error(`no persistence restores ${id}: the Universal OS has not started one`);
+		if (restoring === void 0) throw new Error(`no persistence restores ${id}: the 0field has not started one`);
 		return restoring;
 	}
 	static #restores(given) {
@@ -2412,7 +2462,7 @@ var Arcs = class Arcs extends TypedSmartObject.Class {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/persistence/relations/Relation.ts
+//#region dependencies/metatrom-ag/Manu/main/common/persistence/relations/Relation.ts
 /**
 * Purpose: reach the one SmartObject a model names.
 *
@@ -2429,7 +2479,7 @@ var Relation = class Relation extends Arcs {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/persistence/relations/RelationList.ts
+//#region dependencies/metatrom-ag/Manu/main/common/persistence/relations/RelationList.ts
 /**
 * Purpose: reach the SmartObjects a model names, in their order.
 *
@@ -2455,7 +2505,7 @@ var RelationList = class extends Arcs {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/persistence/relations/RelationMap.ts
+//#region dependencies/metatrom-ag/Manu/main/common/persistence/relations/RelationMap.ts
 /**
 * Purpose: reach the SmartObjects a model names, each by its key.
 *
@@ -2482,7 +2532,7 @@ var RelationMap = class extends Arcs {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/persistence/relations/RelationSet.ts
+//#region dependencies/metatrom-ag/Manu/main/common/persistence/relations/RelationSet.ts
 /**
 * Purpose: reach the SmartObjects a model names, each once.
 *
@@ -2510,7 +2560,7 @@ var RelationSet = class extends Arcs {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/persistence/JsonLd.ts
+//#region dependencies/metatrom-ag/Manu/main/common/persistence/JsonLd.ts
 /**
 * Purpose: hold a SmartObject's model and type as the JSON-LD a node is
 * stored as.
@@ -2519,8 +2569,8 @@ var RelationSet = class extends Arcs {
 * with, each the other's inverse, but for an empty RelationMap under no
 * `@index` term, which reads back as an empty RelationSet; its links are the data of
 * {@link Relation}, {@link RelationList}, {@link RelationSet} and
-* {@link RelationMap}, its ids {@link OasisIri}s where they name the Oasis.
-* A {@link Corpus} is the one node that carries its own `@context`, the
+* {@link RelationMap}, its ids {@link OFieldIri}s where they name the 0field.
+* A {@link Workbench} is the one node that carries its own `@context`, the
 * dictionary of its words, which a node naming it reads its terms through.
 */
 var JsonLd = class JsonLd extends TypedSmartObject {
@@ -2532,36 +2582,40 @@ var JsonLd = class JsonLd extends TypedSmartObject {
 	*
 	* A node is one JSON object, nesting at most {@link JsonLd.depth} deep. It keeps its `@id`, or `location` where it
 	* names none, and every id it names is made absolute against `location` — JSON-LD's own base — one naming its
-	* scheme taken as it stands, but for an oasis IRI naming no ref of the same SmartObject as a tree read at a ref that
+	* scheme taken as it stands, but for an oField IRI naming no ref of the same SmartObject as a tree read at a ref that
 	* pins it — a sha, a version, a range — which names that tree, its context and its type among them, where at a head
 	* — no ref, `latest`, a branch, a data ref — it stands; a `file:` id is refused in a node not read from a file, so what a tree holds cannot read
 	* this host's disk. Its links become the relations' data: `{"@id"}` a Relation's `{"relation"}`, a plain array of
 	* them a RelationSet's `{"set"}`, `@list` a RelationList's `{"list"}`, an array of `{"@id", "@index"}` a
 	* RelationMap's `{"map"}`, `{"@set"}` a set as well, so an empty one has a form; a blank node's `_:` stays data. `@context` and `@type` leave the model: the type is the
 	* IRI its `@type` names, a term of its context — inline or held at the address it names — as the context defines
-	* it, or else expanded through its `@vocab`. A context holds `@vocab` and term definitions: an IRI, or an object of
+	* it, or else expanded through its `@vocab`; a type naming no ref of the workbench whose context the node names at a
+	* ref that pins it — a version, a range — takes that ref. A context holds `@vocab` and term definitions: an IRI, or an object of
 	* `@id`, `@type: "@id"` and `@container` `@set`, `@list` or `@index`. A value under a term of type `@id` is read
 	* as the links it names — a string a Relation's, an array of strings under `@set` a RelationSet's, under `@list` a
 	* RelationList's, an object of strings under `@index` a RelationMap's, an empty object an empty one — whatever shape it has otherwise reads as
-	* above. A node of type Corpus keeps its inline `@context` in its model, as `@context`: the corpus carries its own.
-	* A context at a root's `context.jsonld`, the old name of its `corpus.jsonld`, is refused.
+	* above. A node of type Workbench keeps its inline `@context` in its model, as `@context`: the workbench carries its own.
+	* A context at a root's `corpus.jsonld` or `context.jsonld`, the names of its `workbench.jsonld` before, is refused;
+	* so is an `@id`, `@type` or `@context` of the scheme `oasis:`, the one before `ofield:`, naming `ofield://`.
 	*/
 	async read(text, location, context) {
 		const node = object(parsed(text, location), `a node is a JSON object: ${location}`);
 		if (nesting(node) > JsonLd.depth) throw new Error(`a node nests at most ${JsonLd.depth} deep: ${location}`);
 		const { "@context": held, "@type": type, "@id": own, ...data } = node;
+		if (typeof own === "string") OFieldIri.refuseRetired(own);
 		const id = own === void 0 ? location : absolute(own, location);
 		const dictionary = await this.#dictionary(held, location, context);
 		const fields = Object.fromEntries(Object.entries(data).map(([key, value]) => [key, coerced(dictionary.terms.get(key), value, location) ?? this.#data(value, location)]));
-		const named = pinnedTo(this.#type(type, dictionary, location), location);
-		if (OasisIri.unpinned(named) !== Corpus.type) return {
+		const expanded = pinnedTo(this.#type(type, dictionary, location), location);
+		const named = typeof held === "string" ? pinnedTo(expanded, absolute(held, location)) : expanded;
+		if (OFieldIri.unpinned(named) !== Workbench.type) return {
 			type: named,
 			model: {
 				"@id": id,
 				...fields
 			}
 		};
-		if (typeof held !== "object" || held === null || Array.isArray(held)) throw new Error(`a Corpus carries its own @context, inline: ${location}`);
+		if (typeof held !== "object" || held === null || Array.isArray(held)) throw new Error(`a Workbench carries its own @context, inline: ${location}`);
 		return {
 			type: named,
 			model: {
@@ -2576,17 +2630,17 @@ var JsonLd = class JsonLd extends TypedSmartObject {
 	* `file:` one relative to a `file:` location. An empty RelationMap under no `@index` term is written as an empty set's
 	* `{"@set": []}`, so it reads back as an empty RelationSet.
 	*
-	* A model holding an `@context` is a corpus's: the node carries it as its own dictionary, its `@type` the term the
+	* A model holding an `@context` is a workbench's: the node carries it as its own dictionary, its `@type` the term the
 	* dictionary defines for the type where it defines one. Each field whose term in it is of type `@id` and has the
-	* container its relation takes — none for a Relation, `@set`, `@list`, `@index` — is written as plain strings, an oasis
+	* container its relation takes — none for a Relation, `@set`, `@list`, `@index` — is written as plain strings, an oField
 	* id of the node's own SmartObject and ref relative to `location`.
 	*
-	* A type that is a term at the root of a corpus — `oasis://<namespace>/<Name>/<Term>` — or lies in a folder of it,
-	* each segment a term, names that corpus's `corpus.jsonld`, the dictionary of its words, and is written in them where
+	* A type that is a term at the root of a workbench — `ofield://<namespace>/<Name>/<Term>` — or lies in a folder of it,
+	* each segment a term, names that workbench's `workbench.jsonld`, the dictionary of its words, and is written in them where
 	* that dictionary is given, a type in a folder by its term only where the dictionary defines it as that type, as
-	* {@link JsonLd.dictionary} loads it: each field as a corpus's own is. One pinned to a ref — a sha, a version, a
-	* range — names that corpus's `corpus.jsonld` at the same ref and is written as its IRI, so the ref stays with the
-	* node; one outside an oasis vocabulary, or at a head ref — a branch, a data ref — is written as its IRI, with no
+	* {@link JsonLd.dictionary} loads it: each field as a workbench's own is. One pinned to a ref — a sha, a version, a
+	* range — names that workbench's `workbench.jsonld` at the same ref and is written as its IRI, so the ref stays with the
+	* node; one outside an oField vocabulary, or at a head ref — a branch, a data ref — is written as its IRI, with no
 	* context. Written to a `file:`
 	* location, every `file:` id — its own among them — is relative to it, so a tree of nodes committed and read from
 	* anywhere else names its own places there.
@@ -2597,7 +2651,7 @@ var JsonLd = class JsonLd extends TypedSmartObject {
 		const term = type.slice(type.lastIndexOf("/") + 1);
 		const context = held ?? contextOf$1(type);
 		const terms = dictionaryOf(held ?? (context === void 0 ? void 0 : dictionary))?.terms;
-		const at = OasisIri.of(type)?.model;
+		const at = OFieldIri.of(type)?.model;
 		const named = held === void 0 && at?.ref === void 0 && at?.subpath === term || terms?.get(term)?.id === type ? term : type;
 		const typed = context === void 0 ? {
 			"@id": id,
@@ -2614,8 +2668,8 @@ var JsonLd = class JsonLd extends TypedSmartObject {
 		}, null, 2)}\n`;
 	}
 	/**
-	* The dictionary a model of a type is written in, its corpus's `corpus.jsonld` loaded as {@link JsonLd.read} loads
-	* the context a node names; none for a model holding its own, a corpus's, or a type written whole.
+	* The dictionary a model of a type is written in, its workbench's `workbench.jsonld` loaded as {@link JsonLd.read} loads
+	* the context a node names; none for a model holding its own, a workbench's, or a type written whole.
 	*/
 	async dictionary(model, type, location, context) {
 		const address = model["@context"] === void 0 ? contextOf$1(type) : void 0;
@@ -2662,7 +2716,7 @@ var JsonLd = class JsonLd extends TypedSmartObject {
 		let inline = held;
 		if (typeof held === "string") {
 			const address = absolute(held, location);
-			if (OasisIri.of(address)?.model.subpath === "context.jsonld") throw new Error(`a node names its corpus's corpus.jsonld, not ${address}: ${location}`);
+			if (RETIRED_CONTEXTS.includes(OFieldIri.of(address)?.model.subpath ?? "")) throw new Error(`a node names its workbench's workbench.jsonld, not ${address}: ${location}`);
 			inline = object(parsed(await context(address), address), `a context is a JSON object: ${address}`)["@context"];
 		}
 		return dictionaryOf(inline) ?? {
@@ -2701,6 +2755,7 @@ var JsonLd = class JsonLd extends TypedSmartObject {
 		return Object.fromEntries(map);
 	}
 };
+const RETIRED_CONTEXTS = ["corpus.jsonld", "context.jsonld"];
 /** Whether a word is a term a vocabulary may define: a letter or `_`, then letters, digits, `_` or `-`. */
 function isTerm(word) {
 	return /^[A-Za-z_][\w-]*$/.test(word);
@@ -2753,9 +2808,9 @@ function coerced(term, value, location) {
 	}
 }
 function contextOf$1(type) {
-	const named = OasisIri.of(type)?.model;
-	const held = named?.ref === void 0 || OasisIri.isPinned(named.ref);
-	return named !== void 0 && held && named.subpath !== void 0 && named.subpath.split("/").every(isTerm) ? Corpus.stored(type) : void 0;
+	const named = OFieldIri.of(type)?.model;
+	const held = named?.ref === void 0 || OFieldIri.isPinned(named.ref);
+	return named !== void 0 && held && named.subpath !== void 0 && named.subpath.split("/").every(isTerm) ? Workbench.stored(type) : void 0;
 }
 function plain(term, value, location) {
 	const related = relationOf(value);
@@ -2767,8 +2822,8 @@ function plain(term, value, location) {
 	return Object.fromEntries(new Map(keys.map((key, at) => [key, ids[at]])));
 }
 function relativeIn(id, location) {
-	const to = OasisIri.of(id)?.model;
-	const from = location === void 0 ? void 0 : OasisIri.of(location)?.model;
+	const to = OFieldIri.of(id)?.model;
+	const from = location === void 0 ? void 0 : OFieldIri.of(location)?.model;
 	if (to?.subpath === void 0 || from?.subpath === void 0 || to.source !== from.source || to.namespace !== from.namespace || to.name !== from.name || to.ref !== from.ref) return relativeTo(id, location);
 	const base = from.subpath.split("/").slice(0, -1);
 	const target = to.subpath.split("/");
@@ -2793,7 +2848,7 @@ function absolute(reference, location) {
 	let id;
 	if (/^[A-Za-z][A-Za-z\d+.-]*:/.test(reference)) id = reference.split("#")[0];
 	else {
-		const base = OasisIri.of(location);
+		const base = OFieldIri.of(location);
 		try {
 			if (base !== void 0) id = base.resolve(reference).toString();
 			else {
@@ -2809,11 +2864,11 @@ function absolute(reference, location) {
 	return pinnedTo(id, location);
 }
 function pinnedTo(id, location) {
-	const at = OasisIri.of(location)?.model;
-	if (at?.ref === void 0 || !OasisIri.isPinned(at.ref)) return id;
-	const named = OasisIri.of(id)?.model;
+	const at = OFieldIri.of(location)?.model;
+	if (at?.ref === void 0 || !OFieldIri.isPinned(at.ref)) return id;
+	const named = OFieldIri.of(id)?.model;
 	if (named === void 0 || named.ref !== void 0 || named.source !== at.source || named.namespace !== at.namespace || named.name !== at.name) return id;
-	return `${new OasisIri({
+	return `${new OFieldIri({
 		...named,
 		ref: at.ref
 	})}`;
@@ -2876,26 +2931,26 @@ function isIndexed(value) {
 	return Object.keys(rest).length === 0 && typeof id === "string" && !id.startsWith("_:") && typeof index === "string";
 }
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/node/loading/NodeInstaller.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/node/loading/NodeInstaller.ts
 /**
 * Purpose: put what a start lacks into this host's stores, the seed holding
 * no installer of its own.
 *
-* Intention: fetches the installer its model names — ExtendedKernel's, as
-* {@link NodeInstaller.extendedKernel} — at its latest release, as
+* Intention: fetches the installer its model names — Core's, as
+* {@link NodeInstaller.core} — at its latest release, as
 * {@link Releases} picks it, with git and the credentials git holds, and runs
 * it under `node` from the PATH — under Deno, Deno itself; {@link NodeKernel}
 * asks it to install and to follow descriptors. Node's API, which Deno and Bun implement too.
 */
 var NodeInstaller = class NodeInstaller extends TypedSmartObject {
-	/** ExtendedKernel's installer, the one the seed fills the stores through. */
-	static extendedKernel = new NodeInstaller({
-		repository: "https://github.com/metatrom-ag/ExtendedKernel",
-		installation: "oasis://metatrom-ag/ExtendedKernel/habitats/node/installing/Installation",
+	/** Core's installer, the one the seed fills the stores through. */
+	static core = new NodeInstaller({
+		repository: "https://github.com/metatrom-ag/Core",
+		installation: "ofield://metatrom-ag/Core/habitats/node/installing/Installation",
 		program: "habitats/node/installing/Installation.ts"
 	});
 	/**
-	* Installs what the oasis IRIs name into this host's stores, then follows the descriptors `followed` answers once
+	* Installs what the oField IRIs name into this host's stores, then follows the descriptors `followed` answers once
 	* they are installed, installing what those use: the installer's latest release, cloned shallow into a temporary
 	* folder removed afterwards, run under `node` from the PATH — Deno's own runtime under Deno — once with the IRIs and
 	* once more with the descriptors `followed` answers, where it answers any, speaking on standard error; refused,
@@ -2934,7 +2989,7 @@ var NodeInstaller = class NodeInstaller extends TypedSmartObject {
 		const tag = new Releases(listed.split("\n").flatMap((line) => /\trefs\/tags\/(.+)$/.exec(line)?.[1] ?? [])).latest;
 		if (tag === void 0) throw new Error(`${lacking}, and ${repository} names no release to fill them with`);
 		console.error(`${lacking}, so the installer of ${repository} at ${tag} fills them; that takes about a minute`);
-		const folder = mkdtempSync(`${tmpdir()}/oasis-fill-`);
+		const folder = mkdtempSync(`${tmpdir()}/ofield-fill-`);
 		try {
 			try {
 				git([
@@ -2975,37 +3030,37 @@ var NodeInstaller = class NodeInstaller extends TypedSmartObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/node/loading/NodeUniversalOSHook.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/node/loading/NodeReleaseHook.ts
 /**
-* Purpose: run every SmartObject of a process on the one Universal OS that
+* Purpose: run every SmartObject of a process on the one 0field that
 * started it.
 *
 * Intention: realizes {@link ModuleHook} over this host's disk, for the
-* Universal OS a SmartObject carries as released.
+* 0field a SmartObject carries as released.
 */
-var NodeUniversalOSHook = class NodeUniversalOSHook extends TypedSmartObject {
-	/** The first line of a released Universal OS. */
-	static banner = "// @ts-self-types=\"./universalos.d.ts\"";
-	name = "universalos";
+var NodeReleaseHook = class NodeReleaseHook extends TypedSmartObject {
+	/** The first line of a released 0field. */
+	static banner = "// @ts-self-types=\"./0field.d.ts\"";
+	name = "0field";
 	/**
-	* The running Universal OS its model names, for a carried release a file on disk imports: a `universalos.js` whose
-	* first line is the {@link NodeUniversalOSHook.banner}, ended by LF or CRLF and after a byte order mark a checkout
+	* The running 0field its model names, for a carried release a file on disk imports: a `0field.js` whose
+	* first line is the {@link NodeReleaseHook.banner}, ended by LF or CRLF and after a byte order mark a checkout
 	* may write. So both extend the same SmartObject and nothing starts twice. Any other file of that name is no
 	* release, and passes on.
 	*/
 	resolve(specifier, parentURL) {
-		if (!/^(\.{0,2}\/|file:)/.test(specifier) || !specifier.endsWith("/universalos.js")) return void 0;
+		if (!/^(\.{0,2}\/|file:)/.test(specifier) || !specifier.endsWith("/0field.js")) return void 0;
 		if (!parentURL?.startsWith("file:")) return void 0;
 		const url = new URL(specifier, parentURL).href;
 		if (url === this.model.running) return void 0;
 		const release = new ReadOnlyNodeFile(ReadOnlyNodeFolder.fromUrl(url).path);
 		if (!release.exists) return void 0;
-		const head = new TextDecoder().decode(release.head(NodeUniversalOSHook.banner.length + 5));
-		return /^\uFEFF?(.*?)\r?\n/.exec(head)?.[1] === NodeUniversalOSHook.banner ? this.model.running : void 0;
+		const head = new TextDecoder().decode(release.head(NodeReleaseHook.banner.length + 5));
+		return /^\uFEFF?(.*?)\r?\n/.exec(head)?.[1] === NodeReleaseHook.banner ? this.model.running : void 0;
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/node/loading/NodeKernel.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/node/loading/NodeKernel.ts
 var __rewriteRelativeImportExtension$1 = function(path, preserveJsx) {
 	if (typeof path === "string" && /^\.\.?\//.test(path)) return path.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m, tsx, d, ext, cm) {
 		return tsx ? preserveJsx ? ".jsx" : ".js" : d && (!ext || !cm) ? m : d + ext + "." + cm.toLowerCase() + "js";
@@ -3015,13 +3070,13 @@ var __rewriteRelativeImportExtension$1 = function(path, preserveJsx) {
 /**
 * Purpose: make loading work in Node.
 *
-* Intention: realizes {@link BaseKernel} over Node's module API, which Deno
+* Intention: realizes {@link Manu} over Node's module API, which Deno
 * realizes too from 2.8, carrying its {@link ModuleHookChain} there: the
-* {@link NodeUniversalOSHook}, {@link NodeOasisHook} and {@link NodeNpmHook}.
+* {@link NodeReleaseHook}, {@link NodeOFieldHook} and {@link NodeNpmHook}.
 * Its storage, which a Persistence reads, is a {@link ReadOnlyNodeStorage};
 * what a model names and no store holds, or what that uses, the
-* {@link NodeOasisHook} asked, it fills through {@link NodeInstaller}.
-* Its model names the Universal OS it loads for.
+* {@link NodeOFieldHook} asked, it fills through {@link NodeInstaller}.
+* Its model names the 0field it loads for.
 */
 var NodeKernel = class NodeKernel extends TypedSmartObject {
 	static #registered = false;
@@ -3065,12 +3120,12 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 		});
 	}
 	/**
-	* Adds this kernel's hooks to its chain, the oasis hook as its {@link NodeKernel.realPaths} say, the npm hook under
+	* Adds this kernel's hooks to its chain, the oField hook as its {@link NodeKernel.realPaths} say, the npm hook under
 	* its {@link NodeKernel.conditions}.
 	*/
 	addHooks() {
-		this.hooks.use(new NodeUniversalOSHook({ running: this.model.universalos }));
-		this.hooks.use(new NodeOasisHook({ realPaths: this.realPaths }));
+		this.hooks.use(new NodeReleaseHook({ running: this.model.oField }));
+		this.hooks.use(new NodeOFieldHook({ realPaths: this.realPaths }));
 		this.hooks.use(new NodeNpmHook({ conditions: this.conditions }));
 	}
 	/**
@@ -3103,17 +3158,17 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 	}
 	async classOf(type, place) {
 		const url = this.hooks.moduleOf(type, this.anchor(place));
-		if ([...new URL(url).pathname.matchAll(/\/dependencies\/[^/]+\/[^/]+\/(?=(.*))/g)].some(([, ref]) => OasisIri.isDataRef(ref))) throw new Error(`no class is loaded from a data ref: ${type}`);
+		if ([...new URL(url).pathname.matchAll(/\/dependencies\/[^/]+\/[^/]+\/(?=(.*))/g)].some(([, ref]) => OFieldIri.isDataRef(ref))) throw new Error(`no class is loaded from a data ref: ${type}`);
 		return (await import(__rewriteRelativeImportExtension$1(url))).default;
 	}
 	/**
-	* Fills, through {@link NodeInstaller.extendedKernel}, every release the model at the address names by an oasis IRI
+	* Fills, through {@link NodeInstaller.core}, every release the model at the address names by an oField IRI
 	* and no store or working tree holds — its `@context`, its `@type` and each `{"@id"}` it references — and every
 	* release those use, as the `uses` and `realizes` of the descriptors the stores hold say, all the way down; a plain
 	* string is data and fills nothing, and its own `@id`, an npm package, a branch and a data ref — what no installer
 	* installs, a release being what it installs — are left to restoring. Where the address is a module's `file:` URL,
 	* it fills, the same way, what the descriptor beside that module uses and realizes, a relative path read within the
-	* folder of the nearest `corpus.jsonld` above it, or its own folder where none is. Nothing
+	* folder of the nearest `workbench.jsonld` above it, or its own folder where none is. Nothing
 	* where each is held, or where no model or descriptor is there; refused, naming the file, where a descriptor it reads
 	* is no JSON object.
 	*/
@@ -3130,10 +3185,10 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 				return;
 			}
 		}
-		const oasis = new NodeOasisHook({});
+		const oField = new NodeOFieldHook({});
 		const find = (iri) => {
 			try {
-				return oasis.find(iri, this.anchor());
+				return oField.find(iri, this.anchor());
 			} catch {
 				return null;
 			}
@@ -3141,9 +3196,9 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 		const lacking = /* @__PURE__ */ new Set();
 		const named = [];
 		const take = (value) => {
-			const iri = typeof value === "string" ? OasisIri.of(value) : void 0;
+			const iri = typeof value === "string" ? OFieldIri.of(value) : void 0;
 			const ref = iri?.model.ref;
-			if (iri !== void 0 && iri.model.namespace !== "npm" && (ref === void 0 || ref === "latest" || OasisIri.isPinned(ref))) named.push(iri);
+			if (iri !== void 0 && iri.model.namespace !== "npm" && (ref === void 0 || ref === "latest" || OFieldIri.isPinned(ref))) named.push(iri);
 		};
 		const reference = (value, depth) => {
 			if (depth > JsonLd.depth) return;
@@ -3166,7 +3221,7 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 			const { uses, realizes } = descriptor.readJsonObject();
 			for (const related of [uses, realizes].flatMap((list) => Array.isArray(list) ? list : [])) {
 				if (typeof related !== "string") continue;
-				const iri = OasisIri.of(related);
+				const iri = OFieldIri.of(related);
 				if (iri === void 0) follow(tree.file(within(tree, descriptor, related)), tree);
 				else reach(iri);
 			}
@@ -3177,17 +3232,17 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 			if (tree === null) return;
 			if (tree === void 0) {
 				const { subpath: _subpath, ...release } = iri.model;
-				lacking.add(new OasisIri(release).toString());
+				lacking.add(new OFieldIri(release).toString());
 			} else follow(tree.file(descriptorOf(iri)), tree);
 		};
 		named.forEach(reach);
 		const beside = module?.parent?.file(descriptorBeside(module.name));
 		if (module?.parent !== void 0 && beside !== void 0) {
 			const folder = module.parent;
-			follow(beside, [folder, ...folder.ancestors].find((entry) => isFolder(entry) && entry.file("corpus.jsonld").exists) ?? folder);
+			follow(beside, [folder, ...folder.ancestors].find((entry) => isFolder(entry) && entry.file("workbench.jsonld").exists) ?? folder);
 		}
 		if (lacking.size === 0) return;
-		NodeInstaller.extendedKernel.install([...lacking], () => [...beside?.exists ? [beside.path] : [], ...named.flatMap((iri) => {
+		NodeInstaller.core.install([...lacking], () => [...beside?.exists ? [beside.path] : [], ...named.flatMap((iri) => {
 			const tree = find(iri.toString());
 			const descriptor = tree ? tree.file(descriptorOf(iri)) : void 0;
 			return descriptor?.exists ? [descriptor.path] : [];
@@ -3206,20 +3261,20 @@ function within(tree, descriptor, related) {
 	return path.slice(tree.path.length + 1);
 }
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/bun/BunKernel.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/bun/BunKernel.ts
 /**
 * Purpose: make loading work in Bun.
 *
-* Intention: realizes {@link BaseKernel} as the {@link NodeKernel}, its
+* Intention: realizes {@link Manu} as the {@link NodeKernel}, its
 * storage, words and hooks Node's, its npm conditions Bun's — but carries
 * its {@link ModuleHookChain} in Bun's runtime plugins, since Bun has no
 * `module.registerHooks`.
 */
 var BunKernel = class BunKernel extends NodeKernel {
 	static #registered = false;
-	static #running = "running/universalos.js";
+	static #running = "running/0field.js";
 	static #source = /\.(m?[jt]s|[jt]sx)$/;
-	#namespace = "universalos";
+	#namespace = "0field";
 	#schemes = /* @__PURE__ */ new Set();
 	hooks;
 	conditions = ["bun", "node"];
@@ -3235,7 +3290,7 @@ var BunKernel = class BunKernel extends NodeKernel {
 	}
 	/**
 	* Carries the chain in Bun's runtime plugins, once per process, after adding the hooks the NodeKernel adds. Bun
-	* reads `oasis:…` as the namespace `oasis`, and runs a plugin only for namespaces it was told of — so each scheme a
+	* reads `ofield:…` as the namespace `0field`, and runs a plugin only for namespaces it was told of — so each scheme a
 	* hook names gets a plugin of its own, also when the hook arrives after the start. A hook's `file:` URL is loaded by
 	* Bun itself; any other URL lives in this kernel's namespace, where only the hooks load it. Bun's `onLoad` cannot
 	* pass a request on, so a hook that only observes is asked through {@link ModuleHookChain.observe}. A stored npm
@@ -3259,7 +3314,7 @@ var BunKernel = class BunKernel extends NodeKernel {
 					namespace: this.#namespace
 				}, ({ path }) => {
 					if (path === BunKernel.#running) return {
-						contents: `export * from ${JSON.stringify(this.model.universalos)}`,
+						contents: `export * from ${JSON.stringify(this.model.oField)}`,
 						loader: "js"
 					};
 					const module = this.hooks.load(path);
@@ -3353,7 +3408,7 @@ var BunKernel = class BunKernel extends NodeKernel {
 		});
 	}
 	#uncached(resolved) {
-		if (resolved === void 0 || resolved.namespace !== void 0 || resolved.path !== Bun.fileURLToPath(this.model.universalos)) return resolved;
+		if (resolved === void 0 || resolved.namespace !== void 0 || resolved.path !== Bun.fileURLToPath(this.model.oField)) return resolved;
 		return {
 			path: BunKernel.#running,
 			namespace: this.#namespace
@@ -3386,11 +3441,11 @@ var BunKernel = class BunKernel extends NodeKernel {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/deno/DenoKernel.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/deno/DenoKernel.ts
 /**
 * Purpose: load SmartObjects in the Deno habitat.
 *
-* Intention: realizes {@link BaseKernel} by extending {@link NodeKernel},
+* Intention: realizes {@link Manu} by extending {@link NodeKernel},
 * since Deno supports Node's module API from 2.8. It differs in the
 * `deno` export condition, in `Deno.mainModule` as the starting file,
 * because a compiled binary does not name it in `process.argv`, and in
@@ -3404,7 +3459,7 @@ var DenoKernel = class extends NodeKernel {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/persistence/Persistence.ts
+//#region dependencies/metatrom-ag/Manu/main/common/persistence/Persistence.ts
 /**
 * Purpose: keep SmartObjects beyond the process that created them.
 *
@@ -3414,7 +3469,7 @@ var DenoKernel = class extends NodeKernel {
 * class a type IRI names there; and the anchor it reads that place from,
 * which it hands the habitat's {@link PersistenceWriter}. It reads and
 * writes a stored text as {@link JsonLd}, and speaks to {@link Relation} and to each SmartObject's
-* `Lifecycle`; a {@link Corpus} it puts as the `corpus.jsonld` of the root its `@id` names.
+* `Lifecycle`; a {@link Workbench} it puts as the `workbench.jsonld` of the root its `@id` names.
 */
 var Persistence = class Persistence extends TypedSmartObject {
 	static #writer;
@@ -3464,7 +3519,7 @@ var Persistence = class Persistence extends TypedSmartObject {
 	async restore(address, vocabulary) {
 		const host = await this.#host;
 		const storage = host.storage(this.#place);
-		const location = storage.location(address);
+		const location = located(storage, address);
 		const restored = await this.#once(location, async () => {
 			if (storage.realizes(location)) {
 				if (vocabulary !== void 0) throw new Error(`${location} is what this host realizes, no term of ${vocabulary}`);
@@ -3488,7 +3543,7 @@ var Persistence = class Persistence extends TypedSmartObject {
 	*/
 	async reread(address) {
 		const storage = (await this.#host).storage(this.#place);
-		const location = storage.location(address);
+		const location = located(storage, address);
 		const held = await this.#instances.get(location)?.catch(() => void 0);
 		if (held === void 0 || this.#realizing.has(held)) return;
 		const { type, model } = await this.#read(storage, location, true);
@@ -3516,14 +3571,14 @@ var Persistence = class Persistence extends TypedSmartObject {
 	*/
 	async typeAt(address) {
 		const storage = (await this.#host).storage(this.#place);
-		const location = storage.location(address);
+		const location = located(storage, address);
 		if (storage.realizes(location)) return void 0;
 		return (await this.#read(storage, location)).type;
 	}
 	/** Whether anything is stored at an address — nothing where the place it names is not on this host; refused where it names no place. */
 	async has(address) {
 		const storage = (await this.#host).storage(this.#place);
-		const location = storage.location(address);
+		const location = located(storage, address);
 		return await storage.has(location) || storage.realizes(location);
 	}
 	/**
@@ -3576,9 +3631,9 @@ var Persistence = class Persistence extends TypedSmartObject {
 		const id = object.model["@id"];
 		if (typeof id !== "string" || id === "") throw new Error(`a SmartObject is stored at its @id, and this ${object.constructor.name} names none`);
 		if (this.#realizing.has(object)) throw new Error(`${id} is a ${object.constructor.name} this host realizes, so it is never put`);
-		const root = storage.location(id);
+		const root = located(storage, id);
 		if (storage.realizes(root)) throw new Error(`${id} names what this host realizes, so nothing is put there`);
-		const location = object instanceof Corpus ? storage.location(Corpus.stored(id)) : root;
+		const location = object instanceof Workbench ? storage.location(Workbench.stored(id)) : root;
 		const known = this.#places.get(object);
 		if (known?.has(location)) return location;
 		if (known !== void 0) throw new Error(`${id} was read from ${[...known][0]}, so it is put there, not at ${location}`);
@@ -3612,6 +3667,7 @@ var Persistence = class Persistence extends TypedSmartObject {
 	/** Every SmartObject stored below an address, created as it is reached, each once; refused as {@link Persistence.restore} refuses. */
 	async *all(address, vocabulary) {
 		const storage = (await this.#host).storage(this.#place);
+		OFieldIri.refuseRetired(address);
 		for (const location of await storage.list(address)) yield await this.restore(location, vocabulary);
 	}
 	#writableAt(storage, writable, related) {
@@ -3661,12 +3717,16 @@ function same(a, b) {
 	const keys = Object.keys(a);
 	return keys.length === Object.keys(b).length && keys.every((key) => Object.hasOwn(b, key) && same(a[key], b[key]));
 }
+function located(storage, address) {
+	OFieldIri.refuseRetired(address);
+	return storage.location(address);
+}
 function contextOf(storage) {
 	return async (address) => storage.get(storage.location(address));
 }
 function termOf(type, vocabulary, location) {
 	if (vocabulary === void 0) return;
-	const unpinned = OasisIri.unpinned(type);
+	const unpinned = OFieldIri.unpinned(type);
 	if (unpinned.startsWith(vocabulary) && unpinned.slice(vocabulary.length).split("/").every(isTerm)) return;
 	throw new Error(`${location} names the type ${type}, no term of ${vocabulary}, so its class is not loaded`);
 }
@@ -3759,7 +3819,7 @@ const TypedView = class View extends TypedSmartObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/oasis/json/StringMap.ts
+//#region dependencies/metatrom-ag/Manu/main/common/0field/json/StringMap.ts
 /**
 * Purpose: keep a JSON file of names mapped to strings, and answer by name.
 *
@@ -3781,13 +3841,13 @@ var StringMap = class extends JsonObject {
 	}
 };
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/common/file-system/File.ts
+//#region dependencies/metatrom-ag/Manu/main/common/file-system/File.ts
 /** Whether an {@link Entry} is a {@link File} — by the member only a `File` declares. */
 function isFile(entry) {
 	return "read" in entry;
 }
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/habitats/node/file-system/ReadOnlyGitFolder.ts
+//#region dependencies/metatrom-ag/Manu/main/habitats/node/file-system/ReadOnlyGitFolder.ts
 /**
 * Purpose: run git on one repository, whatever repository the environment
 * names.
@@ -3851,7 +3911,7 @@ const elsewhere = [
 	"GIT_NAMESPACE"
 ];
 //#endregion
-//#region dependencies/metatrom-ag/BaseKernel/main/universalos.ts
+//#region dependencies/metatrom-ag/Manu/main/0field.ts
 var __rewriteRelativeImportExtension = function(path, preserveJsx) {
 	if (typeof path === "string" && /^\.\.?\//.test(path)) return path.replace(/\.(tsx)$|((?:\.d)?)((?:\.[^./]+?)?)\.([cm]?)ts$/i, function(m, tsx, d, ext, cm) {
 		return tsx ? preserveJsx ? ".jsx" : ".js" : d && (!ext || !cm) ? m : d + ext + "." + cm.toLowerCase() + "js";
@@ -3859,11 +3919,11 @@ var __rewriteRelativeImportExtension = function(path, preserveJsx) {
 	return path;
 };
 /**
-* Purpose: the Universal OS — an operating system interface that works in
+* Purpose: the 0field — an operating system interface that works in
 * any environment.
 *
 * Intention: follows the Imago strategy — every part fits into what already
-* exists. It speaks to the {@link BaseKernel} each habitat realizes —
+* exists. It speaks to the {@link Manu} each habitat realizes —
 * {@link NodeKernel}, {@link DenoKernel}, {@link BunKernel}, {@link BrowserKernel} — and knows only
 * that contract; it runs each {@link Program} its realm was started with —
 * a process's file, a tab's script tags — and every program run beside
@@ -3874,14 +3934,14 @@ var __rewriteRelativeImportExtension = function(path, preserveJsx) {
 * {@link persistence} and the kernel's {@link ModuleHookChain} among them,
 * and the {@link ModuleHook} a hook written outside this tree realizes.
 */
-var UniversalOS = class UniversalOS extends TypedSmartObject {
+var OField = class OField extends TypedSmartObject {
 	#programs = /* @__PURE__ */ new Set();
 	/**
 	* Starts the kernel of this habitat — any other environment is named as not implemented yet — then each program the
-	* realm was started with, in order, as {@link UniversalOS.run} runs one, the first hearing the words {@link words}
+	* realm was started with, in order, as {@link OField.run} runs one, the first hearing the words {@link words}
 	* resolves to, and waits until each one's start has finished; {@link words} resolves to none where the realm names
 	* no program. A test is no program; its runner runs it. The started file imports {@link SmartObject} from here, and
-	* so starts the Universal OS by being run.
+	* so starts the 0field by being run.
 	*/
 	async start() {
 		let kernel;
@@ -3896,14 +3956,14 @@ var UniversalOS = class UniversalOS extends TypedSmartObject {
 		const programs = kernel.started;
 		const [first] = programs;
 		if (first === void 0) return heard.resolve([]);
-		if (UniversalOS.#isTest(first.model.address)) return heard.resolve(first.model.words);
-		await UniversalOS.#useHooks(first.model.address, kernel.hooks);
+		if (OField.#isTest(first.model.address)) return heard.resolve(first.model.words);
+		await OField.#useHooks(first.model.address, kernel.hooks);
 		for (const program of programs) await this.#begin(program, program === first ? heard.resolve : () => {});
 		await Promise.all(programs.map((program) => program.finished));
 	}
 	/**
 	* Runs one more program in the running kernel, beside every other, once the kernel has started, and hands it out as
-	* it begins; its {@link Program.finished} settles once its start has finished. The address is a URL, an oasis IRI
+	* it begins; its {@link Program.finished} settles once its start has finished. The address is a URL, an oField IRI
 	* resolved from the started file's place as its imports are, or a path read from that place; a test file, or an
 	* address or a view on a data ref, is refused before anything begins, naming it. The program is the model its
 	* file names by a default export that is a `URL`, restored through {@link persistence}, hearing every word; or the
@@ -3914,12 +3974,12 @@ var UniversalOS = class UniversalOS extends TypedSmartObject {
 	* only then, where `view` names a file, read as the address is, a SmartObject that is no {@link View} is shown in that file's
 	* default export, created without arguments, refused, naming the file, where it exports no View; a View shows as
 	* itself. Before it imports the file, it fills the stores with what the descriptor beside that file uses, and before
-	* it restores a model, with what the model names, as {@link BaseKernel.fill} fills them — through GitHub where a
+	* it restores a model, with what the model names, as {@link Manu.fill} fills them — through GitHub where a
 	* store lacks one.
 	*/
 	async run(address, { words = [], attach, view } = {}) {
 		const kernel = await loaded.promise;
-		if (UniversalOS.#isTest(address)) throw new Error(`a test is run by its runner, not as a program: ${address}`);
+		if (OField.#isTest(address)) throw new Error(`a test is run by its runner, not as a program: ${address}`);
 		const program = new Program({
 			address: kernel.hooks.locate(address, kernel.anchor()),
 			words,
@@ -3951,14 +4011,14 @@ var UniversalOS = class UniversalOS extends TypedSmartObject {
 	}
 	static async #useHooks(address, chain) {
 		if (!address.startsWith("file:")) return;
-		const corpus = Corpus.above(ReadOnlyNodeFolder.fromUrl(address).parent);
-		if (corpus === void 0) return;
-		const root = `${ReadOnlyNodeFolder.urlOf(ReadOnlyNodeFolder.native(corpus.path))}/`;
-		for (const hook of corpus.hooks) try {
+		const workbench = Workbench.above(ReadOnlyNodeFolder.fromUrl(address).parent);
+		if (workbench === void 0) return;
+		const root = `${ReadOnlyNodeFolder.urlOf(ReadOnlyNodeFolder.native(workbench.path))}/`;
+		for (const hook of workbench.hooks) try {
 			const { default: Hook } = await import(__rewriteRelativeImportExtension(chain.locate(hook, root)));
 			chain.use(new Hook(chain));
 		} catch (error) {
-			console.warn(`the hook ${hook} named in ${corpus.path}/corpus.jsonld is not in use: ${error.message}`);
+			console.warn(`the hook ${hook} named in ${workbench.path}/workbench.jsonld is not in use: ${error.message}`);
 		}
 	}
 	static #isTest(address) {
@@ -3987,7 +4047,7 @@ var UniversalOS = class UniversalOS extends TypedSmartObject {
 		}
 		const { attach, view } = program.model;
 		if (attach !== void 0) {
-			const shown = view === void 0 ? started : await UniversalOS.#viewOf(started, view);
+			const shown = view === void 0 ? started : await OField.#viewOf(started, view);
 			(await loaded.promise).attach(shown, attach);
 		}
 		if (this.#programs.size === 0) this.#listen();
@@ -4013,8 +4073,8 @@ var UniversalOS = class UniversalOS extends TypedSmartObject {
 	}
 	#kernel() {
 		const realm = globalThis;
-		const running = { universalos: here };
-		const notImplemented = (environment) => /* @__PURE__ */ new Error(`the Universal OS is not implemented for this environment yet: ${environment}`);
+		const running = { oField: here };
+		const notImplemented = (environment) => /* @__PURE__ */ new Error(`the 0field is not implemented for this environment yet: ${environment}`);
 		const serviceWorker = realm.ServiceWorkerGlobalScope;
 		if (typeof serviceWorker === "function" && realm.self instanceof serviceWorker) throw notImplemented("ServiceWorker");
 		const worker = realm.WorkerGlobalScope;
@@ -4023,7 +4083,7 @@ var UniversalOS = class UniversalOS extends TypedSmartObject {
 		if (realm.Deno !== void 0) return new DenoKernel(running);
 		if (realm.Bun !== void 0) return new BunKernel(running);
 		if (typeof realm.process?.versions?.node === "string") return new NodeKernel(running);
-		throw new Error("the Universal OS did not detect its environment");
+		throw new Error("the 0field did not detect its environment");
 	}
 };
 const here = import.meta.url;
@@ -4033,7 +4093,7 @@ const heard = Promise.withResolvers();
 loaded.promise.catch((error) => heard.reject(error));
 /**
 * The realm's one {@link Persistence}, over the kernel once it loads; every relation restores by it. An address is
-* an oasis IRI, a path or a URL — in a process a `file:` URL, in a tab one it fetches.
+* an oField IRI, a path or a URL — in a process a `file:` URL, in a tab one it fetches.
 */
 const persistence = new Persistence(loaded.promise);
 Relation.use(persistence);
@@ -4052,9 +4112,9 @@ words.catch(() => {});
 */
 const hooks = loaded.promise.then((kernel) => kernel.hooks);
 hooks.catch(() => {});
-/** The one {@link UniversalOS} of this realm, which runs every program; loading this file starts it. */
-const universalOS = new UniversalOS();
+/** The one {@link OField} of this realm, which runs every program; loading this file starts it. */
+const oField = new OField();
 /** The kernel, once each program the realm was started with has finished its start; never awaited here, as a service worker forbids top-level await. */
-const started = universalOS.start().then(() => loaded.promise);
+const started = oField.start().then(() => loaded.promise);
 //#endregion
-export { Corpus, Entry, GitNotes, ModuleHookChain, NodeStores, OasisIri, Persistence, Program, ReadOnlyGitFolder, ReadOnlyNodeFile, ReadOnlyNodeFolder, ReadOnlyNodeStorage, Relation, RelationList, RelationMap, RelationSet, Releases, RootedTreeNode, TypedSmartObject as SmartObject, StringMap, UniversalOS, TypedView as View, hooks, isFile, isFolder, persistence, started, universalOS, words };
+export { Entry, GitNotes, ModuleHookChain, NodeStores, OField, OFieldIri, Persistence, Program, ReadOnlyGitFolder, ReadOnlyNodeFile, ReadOnlyNodeFolder, ReadOnlyNodeStorage, Relation, RelationList, RelationMap, RelationSet, Releases, RootedTreeNode, TypedSmartObject as SmartObject, StringMap, TypedView as View, Workbench, hooks, isFile, isFolder, oField, persistence, started, words };

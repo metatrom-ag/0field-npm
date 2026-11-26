@@ -1,11 +1,12 @@
-# oasis
+# 0field
 
-The command line of the Universal OS: it installs, syncs and prunes what a
-tree's descriptors use, and writes its types.
+The command line of the 0field: it installs, syncs and prunes what a
+tree's descriptors use, writes its types, and makes and keeps
+workbenches.
 
 ```sh
-npm i -g @0field/oasis
-oasis --help
+npm i -g 0field
+0field --help
 ```
 
 It needs Node 23.6 or newer. What it installs it clones from GitHub, with

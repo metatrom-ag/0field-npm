@@ -1,4 +1,4 @@
 {
-  "@context": "oasis://metatrom-ag/Oasis/corpus.jsonld",
-  "@type": "Oasis"
+  "@context": "ofield://metatrom-ag/0field/workbench.jsonld",
+  "@type": "Launcher"
 }
