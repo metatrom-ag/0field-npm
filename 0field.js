@@ -799,6 +799,13 @@ var Workbench = class Workbench extends GitRepository {
 	own(id) {
 		return id === this.#named ? this.folder : void 0;
 	}
+	/**
+	* Whether this repository is the one a SmartObject, `<namespace>/<Name>`, names: by the `@id` of its root's
+	* `workbench.jsonld`, or, where that names none, by its `origin` remote.
+	*/
+	names(id) {
+		return id === (this.#named ?? this.id);
+	}
 	/** The branch of a SmartObject's one checkout; none where it has none, refused where it has several, so a ref is named. */
 	branch(id) {
 		const branches = this.#branches(id);
@@ -2024,6 +2031,103 @@ var NodeNpmHook = class NodeNpmHook extends TypedSmartObject {
 const RESOLVE = /\bimport\.meta\.resolve\s*\(/;
 const RESOLVER = "metatrom.oField.resolve";
 //#endregion
+//#region dependencies/metatrom-ag/Manu/main/common/0field/BuiltWorkbench.ts
+/**
+* Purpose: let a SmartObject run where no store is, from the workbench its
+* build carries.
+*
+* Intention: one is the {@link Workbench} a built SmartObject carries —
+* its `workbench.jsonld` as text, the classes it lists and its data files —
+* registered by the build as it loads, for the realm. In Node, Deno and
+* Bun the kernel asks it for a type's class and fills none of it, and the
+* storage reads, finds and lists its texts there, before any store.
+*/
+var BuiltWorkbench = class BuiltWorkbench extends TypedSmartObject {
+	static #registered = /* @__PURE__ */ new Map();
+	#carried = {
+		files: /* @__PURE__ */ new Map(),
+		classes: /* @__PURE__ */ new Map()
+	};
+	/**
+	* Registers the workbench a built SmartObject carries, called by the build as it loads: its `workbench.jsonld` as
+	* text, the class of each descriptor that lists in `classes` — `X.descriptor.jsonld`'s by `X`, the path its type names
+	* within the workbench — and each data file by its path. In Node, Deno and Bun what it carries is then read from here
+	* before any store, and counted as held when the kernel fills the stores. Each text is kept as a stored one is read, a
+	* leading byte order mark dropped, and the one registered holds in its model the `@id` and the version its text
+	* names. Refused, naming it, where the text names no workbench by an oField IRI of its own
+	* or lists its classes as anything but descriptor paths, where a class it lists is not carried, where a file's path is
+	* no plain path within the workbench — `./`, `..`, `\`, a leading or a doubled `/` — or is its `workbench.jsonld`,
+	* and where another text of that workbench is registered already; the same texts again leave the first registration
+	* as it is, its classes the ones answered.
+	*/
+	static use({ workbench: given, classes, files = {} }) {
+		const workbench = unmarked(given);
+		let model;
+		try {
+			model = JSON.parse(workbench);
+		} catch (cause) {
+			throw new Error("a built workbench.jsonld is JSON", { cause });
+		}
+		if (typeof model !== "object" || model === null || Array.isArray(model)) throw new Error(`a built workbench.jsonld is a JSON object: ${workbench}`);
+		const { "@id": id, classes: listed } = model;
+		const named = typeof id === "string" ? OFieldIri.of(id)?.model : void 0;
+		if (typeof id !== "string" || named === void 0 || named.namespace === "npm" || named.source !== void 0 || named.ref !== void 0 || named.subpath !== void 0) throw new Error(`a built workbench.jsonld names its workbench by an @id, ofield://<namespace>/<Name>: ${String(id)}`);
+		if (listed !== void 0 && !(Array.isArray(listed) && listed.every((each) => typeof each === "string"))) throw new Error(`${id} lists its classes as descriptor paths`);
+		for (const descriptor of listed ?? []) {
+			const path = descriptor.replace(/\.descriptor\.jsonld$/, "");
+			if (!Object.hasOwn(classes, path) || typeof classes[path] !== "function") throw new Error(`${id} lists the class ${path}, which its build does not carry`);
+		}
+		for (const path of Object.keys(files)) {
+			if (path === "workbench.jsonld") throw new Error(`${id} carries its workbench.jsonld as its workbench, not among its files`);
+			if (path.includes("\\") || path.split("/").some((segment) => segment === "" || segment === "." || segment === "..")) throw new Error(`${id} carries a file at ${path}, no plain path within it`);
+		}
+		const carried = new Map([...Object.entries(files).map(([path, text]) => [path, unmarked(text)]), ["workbench.jsonld", workbench]]);
+		const key = `${named.namespace}/${named.name}`;
+		const held = BuiltWorkbench.#registered.get(key)?.files;
+		if (held !== void 0) {
+			if (held.size === carried.size && [...carried].every(([path, text]) => held.get(path) === text)) return;
+			throw new Error(`${id} is registered already by another build, which carries other texts`);
+		}
+		const { version } = model;
+		const built = new BuiltWorkbench({
+			"@id": id,
+			...typeof version === "string" ? { version } : {}
+		});
+		built.#carried = {
+			files: carried,
+			classes: new Map(Object.entries(classes))
+		};
+		BuiltWorkbench.#registered.set(key, built);
+	}
+	/**
+	* The workbench a build registered that an oField IRI names, by its `@id`: at no ref, at `latest`, or at its own
+	* version's tag, `v<version>`, or a range holding that version; none for any other ref, a branch, a sha or a data ref
+	* among them, and for an IRI of no registered workbench.
+	*/
+	static of(iri) {
+		const named = OFieldIri.of(iri)?.model;
+		if (named === void 0 || named.source !== void 0) return void 0;
+		const built = BuiltWorkbench.#registered.get(`${named.namespace}/${named.name}`);
+		if (built === void 0) return void 0;
+		const { ref } = named;
+		if (ref === void 0 || ref === "latest") return built;
+		const { version } = built.model;
+		const tag = `v${version}`;
+		return typeof version === "string" && new Releases([tag]).named(ref) === tag ? built : void 0;
+	}
+	/** The texts its build carries, by their path within the workbench — its `workbench.jsonld` among them. */
+	get files() {
+		return this.#carried.files;
+	}
+	/** The classes its build carries, by the path a type names within the workbench. */
+	get classes() {
+		return this.#carried.classes;
+	}
+};
+function unmarked(text) {
+	return text.startsWith("﻿") ? text.slice(1) : text;
+}
+//#endregion
 //#region dependencies/metatrom-ag/Manu/main/common/file-system/git/GitNotes.ts
 /**
 * Purpose: say where in a notes tree the note of a commit stands, whether git
@@ -2210,6 +2314,8 @@ function descriptorBeside(path) {
 * through the {@link NodeOFieldHook}, an npm package's version through
 * {@link NodeStores} and {@link Releases}, realizes a repository's root as
 * its {@link Workbench}, and finds a note of a notes ref through {@link GitNotes}.
+* What a build carries of a workbench it registered, a
+* {@link BuiltWorkbench}, is read from there, before any tree.
 */
 var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 	/**
@@ -2230,13 +2336,18 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 		url.hash = "";
 		return url.href;
 	}
-	/** Whether a text is stored at a location; none is where this host holds no tree the location names. */
+	/**
+	* Whether a text is stored at a location; none is where this host holds no tree the location names. A location in a
+	* workbench a build registered is answered by what that build carries alone.
+	*/
 	async has(location) {
 		return this.hasSync(location);
 	}
 	/** {@link ReadOnlyNodeStorage.has}, answered at once. */
 	hasSync(location) {
 		if (!location.startsWith("ofield:")) return new ReadOnlyNodeFile(ReadOnlyNodeFolder.fromUrl(location).path).exists;
+		const built = this.#built(location);
+		if (built !== void 0) return built.path !== void 0 && built.files.has(built.path);
 		const npm = ReadOnlyNodeStorage.#npm(location);
 		if (npm !== void 0) return this.#described(npm) !== void 0;
 		const { subpath, tree: address } = this.#parsed(location);
@@ -2286,13 +2397,20 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 	* it from the started file's place: a tag or a sha in the stores, a branch in its repository. An npm package's,
 	* `ofield://npm/<name>@<ref>`, names instead the node describing a version, `npm/<name>/<version>.descriptor.jsonld`,
 	* beside the version folder its ref names among those the stores describe: exact, the highest within a range, the
-	* latest for none, as {@link Releases} reads a ref. A file of the package names none.
+	* latest for none, as {@link Releases} reads a ref. A file of the package names none. A location in a workbench a
+	* build registered is the text that build carries there, refused where it carries none.
 	*/
 	async get(location) {
 		return this.getSync(location);
 	}
 	/** {@link ReadOnlyNodeStorage.get}, answered at once. */
 	getSync(location) {
+		const built = this.#built(location);
+		if (built !== void 0) {
+			const text = built.path === void 0 ? void 0 : built.files.get(built.path);
+			if (text === void 0) throw new Error(`no model at ${location}`);
+			return text;
+		}
 		const file = this.#file(location);
 		if (!file.exists) {
 			const folder = location.startsWith("ofield:") ? void 0 : this.#folder(location);
@@ -2308,7 +2426,8 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 	}
 	/**
 	* The location of every text below an address, sorted: every name beginning with `.` skipped — a worktree's `.git`
-	* among them — and, in a tree, every name an oField IRI cannot hold as it stands, one with `#`, `%` or `?`.
+	* among them — and, in a tree, every name an oField IRI cannot hold as it stands, one with `#`, `%` or `?`. Below an
+	* address in a workbench a build registered, what that build carries there, refused where it carries nothing.
 	*/
 	async list(address) {
 		return this.listSync(address);
@@ -2316,6 +2435,17 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 	/** {@link ReadOnlyNodeStorage.list}, answered at once. */
 	listSync(address) {
 		const located = this.location(address);
+		const built = this.#built(located);
+		if (built !== void 0) {
+			const { tree } = this.#parsed(located);
+			const below = built.path === void 0 ? "" : `${built.path}/`;
+			const paths = [...built.files.keys()].filter((path) => path.startsWith(below) && !/(^|\/)\.|[#%?]/.test(path));
+			if (paths.length === 0) throw new Error(`no folder at ${located}`);
+			return paths.map((path) => new OFieldIri({
+				...tree,
+				subpath: path
+			}).toString()).sort();
+		}
 		const { folder, at, held } = located.startsWith("ofield:") ? this.#oFieldFolder(located) : {
 			folder: ReadOnlyNodeFolder.fromUrl(located),
 			at: (file) => ReadOnlyNodeFolder.urlOf(file),
@@ -2323,6 +2453,14 @@ var ReadOnlyNodeStorage = class ReadOnlyNodeStorage extends TypedSmartObject {
 		};
 		if (!folder.exists) throw new Error(`no folder at ${located}`);
 		return [...new Set([...stored(folder)].filter(held).map(at))].sort();
+	}
+	#built(location) {
+		if (!location.startsWith("ofield:")) return void 0;
+		const built = BuiltWorkbench.of(location);
+		return built === void 0 ? void 0 : {
+			files: built.files,
+			path: this.#parsed(location).subpath
+		};
 	}
 	#file(location) {
 		if (!location.startsWith("ofield:")) return new ReadOnlyNodeFile(ReadOnlyNodeFolder.fromUrl(location).path);
@@ -3075,8 +3213,10 @@ var __rewriteRelativeImportExtension$1 = function(path, preserveJsx) {
 * {@link NodeReleaseHook}, {@link NodeOFieldHook} and {@link NodeNpmHook}.
 * Its storage, which a Persistence reads, is a {@link ReadOnlyNodeStorage};
 * what a model names and no store holds, or what that uses, the
-* {@link NodeOFieldHook} asked, it fills through {@link NodeInstaller}.
-* Its model names the 0field it loads for.
+* {@link NodeOFieldHook} asked, it fills through {@link NodeInstaller},
+* leaving to the {@link Workbench} that holds the model what it names; it
+* answers a type of a workbench a build registered from that
+* {@link BuiltWorkbench}. Its model names the 0field it loads for.
 */
 var NodeKernel = class NodeKernel extends TypedSmartObject {
 	static #registered = false;
@@ -3156,7 +3296,17 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 	storage(place) {
 		return new ReadOnlyNodeStorage({ main: this.anchor(place) });
 	}
+	/**
+	* The default export of the module a type IRI names, as the place resolves it; where a build registered the workbench
+	* it names, the class that build carries, from any place, refused, naming the type, where it carries none.
+	*/
 	async classOf(type, place) {
+		const built = BuiltWorkbench.of(type);
+		if (built !== void 0) {
+			const path = OFieldIri.of(type)?.model.subpath ?? "";
+			if (!built.classes.has(path)) throw new Error(`the build carrying ${built.model["@id"]} carries no class ${path}: ${type}`);
+			return built.classes.get(path);
+		}
 		const url = this.hooks.moduleOf(type, this.anchor(place));
 		if ([...new URL(url).pathname.matchAll(/\/dependencies\/[^/]+\/[^/]+\/(?=(.*))/g)].some(([, ref]) => OFieldIri.isDataRef(ref))) throw new Error(`no class is loaded from a data ref: ${type}`);
 		return (await import(__rewriteRelativeImportExtension$1(url))).default;
@@ -3166,19 +3316,22 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 	* and no store or working tree holds — its `@context`, its `@type` and each `{"@id"}` it references — and every
 	* release those use, as the `uses` and `realizes` of the descriptors the stores hold say, all the way down; a plain
 	* string is data and fills nothing, and its own `@id`, an npm package, a branch and a data ref — what no installer
-	* installs, a release being what it installs — are left to restoring. Where the address is a module's `file:` URL,
+	* installs, a release being what it installs — are left to restoring, as is a `{"@id"}` naming a ref of the repository that
+	* holds the model — by the `@id` of its `workbench.jsonld`, else by its `origin` — which git reads there. Where the address is a module's `file:` URL,
 	* it fills, the same way, what the descriptor beside that module uses and realizes, a relative path read within the
 	* folder of the nearest `workbench.jsonld` above it, or its own folder where none is. Nothing
 	* where each is held, or where no model or descriptor is there; refused, naming the file, where a descriptor it reads
-	* is no JSON object.
+	* is no JSON object. What a build registered through {@link BuiltWorkbench.use} counts as held.
 	*/
 	async fill(address) {
 		const module = address.startsWith("file:") && descriptorBeside(address) !== void 0 ? ReadOnlyNodeFolder.fromUrl(address) : void 0;
 		let node;
+		let holder;
 		if (module === void 0) {
 			const storage = this.storage();
 			const location = storage.location(address);
 			if (!await storage.has(location)) return;
+			holder = Workbench.above(location.startsWith("file:") ? ReadOnlyNodeFolder.fromUrl(location).parent : new NodeOFieldHook({}).find(location, this.anchor()));
 			try {
 				node = JSON.parse(await storage.get(location));
 			} catch {
@@ -3205,7 +3358,8 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 			if (Array.isArray(value)) value.forEach((each) => reference(each, depth + 1));
 			else if (typeof value === "object" && value !== null) {
 				const { "@id": id, ...rest } = value;
-				take(id);
+				const link = typeof id === "string" ? OFieldIri.of(id) : void 0;
+				if (link?.model.ref === void 0 || holder?.names(`${link.model.namespace}/${link.model.name}`) !== true) take(id);
 				Object.values(rest).forEach((each) => reference(each, depth + 1));
 			}
 		};
@@ -3227,7 +3381,7 @@ var NodeKernel = class NodeKernel extends TypedSmartObject {
 			}
 		};
 		const reach = (iri) => {
-			if (iri.model.namespace === "npm") return;
+			if (iri.model.namespace === "npm" || BuiltWorkbench.of(iri.toString()) !== void 0) return;
 			const tree = find(iri.toString());
 			if (tree === null) return;
 			if (tree === void 0) {
@@ -4117,4 +4271,4 @@ const oField = new OField();
 /** The kernel, once each program the realm was started with has finished its start; never awaited here, as a service worker forbids top-level await. */
 const started = oField.start().then(() => loaded.promise);
 //#endregion
-export { Entry, GitNotes, ModuleHookChain, NodeStores, OField, OFieldIri, Persistence, Program, ReadOnlyGitFolder, ReadOnlyNodeFile, ReadOnlyNodeFolder, ReadOnlyNodeStorage, Relation, RelationList, RelationMap, RelationSet, Releases, RootedTreeNode, TypedSmartObject as SmartObject, StringMap, TypedView as View, Workbench, hooks, isFile, isFolder, oField, persistence, started, words };
+export { BuiltWorkbench, Entry, GitNotes, ModuleHookChain, NodeStores, OField, OFieldIri, Persistence, Program, ReadOnlyGitFolder, ReadOnlyNodeFile, ReadOnlyNodeFolder, ReadOnlyNodeStorage, Relation, RelationList, RelationMap, RelationSet, Releases, RootedTreeNode, TypedSmartObject as SmartObject, StringMap, TypedView as View, Workbench, hooks, isFile, isFolder, oField, persistence, started, words };

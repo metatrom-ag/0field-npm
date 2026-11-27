@@ -2,5 +2,5 @@
   "@context": "ofield://metatrom-ag/Cli/workbench.jsonld",
   "@type": "Cli",
   "bin": "0field",
-  "root": { "@id": "ofield://metatrom-ag/0field@v0.19.1:Launcher" }
+  "root": { "@id": "ofield://metatrom-ag/0field@v0.19.2:Launcher" }
 }
